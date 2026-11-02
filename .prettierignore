@@ -1,0 +1,7 @@
+dist
+coverage
+server/drizzle
+package-lock.json
+*.md
+.claude
+.playwright-mcp

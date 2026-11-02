@@ -1,0 +1,89 @@
+@import "@fontsource-variable/archivo/wdth.css";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Archivo Variable", system-ui, sans-serif;
+
+  --color-fundo: #edf0f4;
+  --color-papel: #ffffff;
+  --color-tinta: #0f1a2b;
+  --color-suave: #5d6a7c;
+  --color-linha: #dae0e8;
+  --color-painel: #f4f6f9;
+  --color-acento: #2f6fc0;
+  --color-acento-forte: #255a9e;
+  --color-acento-claro: #6fa8f0;
+  --color-ok: #1f8a4c;
+  --color-alerta: #c98a06;
+  --color-perigo: #b4261a;
+  --color-vendido: #7a7f88;
+
+  --color-noite: #0a1220;
+  --color-noite-campo: #0f192a;
+  --color-noite-cartao: #111c2e;
+  --color-noite-foto: #16233a;
+  --color-noite-linha: #1e2b42;
+  --color-noite-borda: #253552;
+  --color-noite-texto: #eef2f7;
+  --color-noite-suave: #8f9bae;
+  --color-noite-prata: #c3ccd9;
+
+  --color-whatsapp: #1fa855;
+  --color-whatsapp-forte: #178e47;
+
+  --shadow-cartao: 0 1px 2px rgb(20 20 20 / 0.05), 0 6px 24px rgb(20 20 20 / 0.06);
+  --shadow-vitrine: 0 14px 40px rgb(20 60 130 / 0.25);
+}
+
+@utility texto-metal {
+  background-image: linear-gradient(180deg, #ffffff 0%, #d5dce6 50%, #8d99aa 100%);
+  background-clip: text;
+  color: transparent;
+}
+
+@utility fundo-topo {
+  background-image: linear-gradient(120deg, #091221 0%, #10203a 60%, #16305a 100%);
+}
+
+@utility fundo-hero {
+  background-image:
+    radial-gradient(700px 420px at 50% 38%, rgb(47 111 192 / 0.3), transparent 65%),
+    radial-gradient(1200px 500px at 50% -20%, rgb(120 170 240 / 0.12), transparent 60%),
+    repeating-linear-gradient(115deg, transparent 0 46px, rgb(255 255 255 / 0.025) 46px 47px);
+}
+
+@layer base {
+  body {
+    @apply bg-fundo text-[15px] leading-normal text-tinta antialiased;
+  }
+}
+
+@layer components {
+  .botao {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-linha bg-papel px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition hover:border-[#b9c4d2] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55;
+  }
+
+  .botao-primario {
+    @apply border-acento bg-acento text-white hover:border-acento-forte hover:bg-acento-forte;
+  }
+
+  .botao-escuro {
+    @apply border-[#26375a] bg-[#16243a] text-white hover:border-[#26375a] hover:bg-[#1d2e4a];
+  }
+
+  .botao-fantasma {
+    @apply border-transparent bg-transparent hover:border-transparent hover:bg-black/5;
+  }
+
+  .botao-pequeno {
+    @apply rounded-lg px-2.5 py-1.5 text-[13px];
+  }
+
+  .entrada {
+    @apply min-h-10 w-full rounded-[10px] border border-linha bg-papel px-3 py-2 outline-none focus:border-acento focus:ring-2 focus:ring-acento/25 aria-invalid:border-perigo;
+  }
+
+  .rotulo {
+    @apply text-xs font-semibold tracking-[0.06em] text-suave uppercase;
+  }
+}
