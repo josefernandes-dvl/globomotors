@@ -51,9 +51,11 @@ export function PaginaCliente() {
 }
 
 function EdicaoDoCliente({ id }: { id: string }) {
-  const consulta = useQuery(consultaCliente(id));
+  const [excluido, setExcluido] = useState(false);
+  const consulta = useQuery({ ...consultaCliente(id), enabled: !excluido });
   const naoExiste = consulta.error instanceof ErroApi && consulta.error.status === 404;
-  if (consulta.data && !naoExiste) return <FormularioCliente cliente={consulta.data} />;
+  if (consulta.data && !naoExiste)
+    return <FormularioCliente cliente={consulta.data} onExcluido={() => setExcluido(true)} />;
   if (consulta.isError) {
     return (
       <PaginaDoPainel titulo="Cliente">
@@ -77,7 +79,13 @@ function EdicaoDoCliente({ id }: { id: string }) {
   );
 }
 
-function FormularioCliente({ cliente }: { cliente?: Cliente }) {
+function FormularioCliente({
+  cliente,
+  onExcluido,
+}: {
+  cliente?: Cliente;
+  onExcluido?: () => void;
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const avisar = useAvisos();
@@ -109,6 +117,7 @@ function FormularioCliente({ cliente }: { cliente?: Cliente }) {
   const excluir = useMutation({
     mutationFn: (id: string) => api.delete(`/dashboard/customers/${id}`),
     onSuccess: async (_resposta, id) => {
+      onExcluido?.();
       avisar("Cliente excluído.");
       await navigate("/dashboard/customers");
       queryClient.removeQueries({ queryKey: consultaCliente(id).queryKey });
