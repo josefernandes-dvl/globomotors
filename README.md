@@ -49,6 +49,12 @@ O login aceita 10 tentativas a cada 15 minutos por IP e por e-mail. No desenvolv
 cd server && node --env-file-if-exists=.env scripts/prepararTesteDeSeguranca.ts --liberar
 ```
 
+Para voltar o banco local a um vendedor só, sem carros, fotos, clientes nem interesses, rode a partir de `server/`. A configuração da loja é mantida, e o script pede a senha do vendedor duas vezes. Ele só aceita banco em `localhost`.
+
+```bash
+cd server && node --env-file-if-exists=.env scripts/zerarBanco.ts --nome "Seu Nome" --email voce@loja.com
+```
+
 ## Antes de considerar uma mudança pronta
 
 ```bash
@@ -64,4 +70,37 @@ São os mesmos passos do job `validar` do CI.
 ```bash
 npm run build
 npm start                             # API servindo o front buildado em http://localhost:3001
+```
+
+## Deploy na Vercel
+
+O front vai para o CDN da Vercel e a API vira uma função Node 24 em São Paulo (`gru1`), no mesmo domínio. O banco é um Postgres do Neon, ligado ao projeto pela aba Storage da Vercel, que cria o `DATABASE_URL`.
+
+O deploy sai só do CI. O job `implantar` do `.github/workflows/ci.yml` roda depois do `validar`, a cada push na `main`, quando o repositório tem estas configurações em Settings, Secrets and variables, Actions, nos quadros do repositório (Repository variables e Repository secrets). O job não usa environment do GitHub, então o que for criado em Environments não chega a ele:
+
+- variáveis `VERCEL_ORG_ID` e `VERCEL_PROJECT_ID` (estão no `.vercel/project.json` depois de um `npx vercel@65.9.0 link`);
+- secret `VERCEL_TOKEN` (criado em Account Settings, Tokens, na Vercel).
+
+Sem elas o job fica pulado. As migrations rodam no fim do build de produção.
+
+Não rode `vercel deploy` nem `vercel` puro na sua máquina: a CLI não respeita o `.gitignore` e enviaria o `server/.env` e outros arquivos locais.
+
+Para conferir a saída da Vercel sem publicar nada (grava em `.vercel/output`):
+
+```bash
+npm run build:vercel
+```
+
+O vendedor de produção é criado com o mesmo script, apontando para o banco do Neon. A partir de `server/`, cole a URL do Neon quando o terminal pedir (ela não aparece na tela nem fica no histórico):
+
+```bash
+read -rsp "URL do banco do Neon: " DATABASE_URL && export DATABASE_URL && echo
+```
+
+```bash
+node scripts/criarVendedor.ts --nome "Seu Nome" --email voce@loja.com
+```
+
+```bash
+unset DATABASE_URL
 ```

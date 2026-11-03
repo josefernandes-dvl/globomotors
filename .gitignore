@@ -5,6 +5,7 @@ coverage/
 *.log
 .vite/
 .playwright-mcp/
+.vercel/
 .DS_Store
 
 .env
@@ -16,3 +17,5 @@ coverage/
 
 .claude/settings.local.json
 CLAUDE.local.md
+.vercel
+.env*

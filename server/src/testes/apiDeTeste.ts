@@ -83,6 +83,7 @@ export async function prepararApiDeTeste() {
   }
 
   return {
+    banco,
     repositorios,
     logger,
     url: servidor.url,

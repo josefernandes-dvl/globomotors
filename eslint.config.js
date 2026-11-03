@@ -10,7 +10,7 @@ const mensagemShared =
   "shared/ roda no navegador e no Node: importe só zod e arquivos do próprio shared/.";
 
 export default defineConfig([
-  globalIgnores(["**/dist", "**/coverage", "server/drizzle"]),
+  globalIgnores(["**/dist", "**/coverage", "server/drizzle", ".vercel"]),
   {
     files: ["**/*.{js,ts,tsx}"],
     extends: [js.configs.recommended, tseslint.configs.recommendedTypeChecked],

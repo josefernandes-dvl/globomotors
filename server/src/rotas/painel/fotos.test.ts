@@ -110,9 +110,19 @@ describe("POST /api/dashboard/cars/:id/photos", () => {
     expect(await idsDasFotos(carroId)).toEqual([]);
   });
 
-  it("recusa arquivo acima de 5 MB", async () => {
+  it("aceita foto de até 4 MB, abaixo dos 4,5 MB que a função da Vercel recebe", async () => {
     const carroId = await criarCarro();
-    const grande = Buffer.concat([fotoDeTeste("jpeg"), Buffer.alloc(5 * 1024 * 1024)]);
+    const foto = fotoDeTeste("jpeg");
+    const noLimite = Buffer.concat([foto, Buffer.alloc(4 * 1024 * 1024 - foto.length)]);
+    const resposta = await enviarFoto(carroId, noLimite);
+
+    expect(resposta.status).toBe(201);
+    expect(await idsDasFotos(carroId)).toEqual([resposta.corpo.foto.id]);
+  });
+
+  it("recusa arquivo acima de 4 MB", async () => {
+    const carroId = await criarCarro();
+    const grande = Buffer.concat([fotoDeTeste("jpeg"), Buffer.alloc(4 * 1024 * 1024)]);
     const resposta = await enviarFoto(carroId, grande);
 
     expect(resposta.status).toBe(413);

@@ -438,7 +438,7 @@ describe("GET /api/showroom/photos/:id", () => {
     await configurarLoja();
   });
 
-  it("serve a foto de carro publicado com cache público", async () => {
+  it("serve a foto de carro publicado com cache público, também no CDN", async () => {
     const carro = await criarCarro();
     const dados = fotoDeTeste("jpeg");
     const foto = await enviarFoto(carro.id, dados);
@@ -447,7 +447,7 @@ describe("GET /api/showroom/photos/:id", () => {
 
     expect(baixada.status).toBe(200);
     expect(baixada.headers.get("content-type")).toBe("image/jpeg");
-    expect(baixada.headers.get("cache-control")).toBe("public, max-age=86400");
+    expect(baixada.headers.get("cache-control")).toBe("public, max-age=86400, s-maxage=86400");
     expect(baixada.dados.equals(dados)).toBe(true);
   });
 
