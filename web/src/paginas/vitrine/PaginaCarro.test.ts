@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { carroPublico, LOJA_PUBLICA } from "../../testes/dados.ts";
@@ -142,7 +142,8 @@ describe("PaginaCarro", () => {
     expect(fotoPrincipal()).toHaveAttribute("src", "/api/showroom/photos/f2");
   });
 
-  it("mostra a foto única sem botões de navegação", async () => {
+  it("mostra a foto única sem navegação, também em tela cheia", async () => {
+    const usuario = userEvent.setup();
     simularCarro({ [ROTA_DO_CARRO]: { carro: carroPublico({ fotos: FOTOS.slice(0, 1) }) } });
 
     renderizarRota(CAMINHO);
@@ -151,7 +152,95 @@ describe("PaginaCarro", () => {
       "src",
       "/api/showroom/photos/f1",
     );
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getByRole("button")).toHaveAccessibleName("Ver foto em tela cheia");
+
+    await usuario.click(screen.getByRole("button"));
+
+    const dialogo = screen.getByRole("dialog", { name: "Foto em tela cheia" });
+    expect(within(dialogo).getByRole("img", { name: "Chevrolet Onix" })).toHaveAttribute(
+      "src",
+      "/api/showroom/photos/f1",
+    );
+    expect(within(dialogo).getByRole("button")).toHaveAccessibleName("Fechar");
+    expect(dialogo.textContent).toBe("");
+
+    await usuario.tab();
+    expect(within(dialogo).getByRole("button")).toHaveFocus();
+    await usuario.tab({ shift: true });
+    expect(within(dialogo).getByRole("button")).toHaveFocus();
+  });
+
+  it("abre a foto atual em tela cheia, passa as fotos e devolve o foco ao fechar", async () => {
+    const usuario = userEvent.setup();
+    simularCarro();
+    renderizarRota(CAMINHO);
+    await screen.findByRole("img", { name: "Chevrolet Onix, foto 1 de 3" });
+    await usuario.click(screen.getByRole("button", { name: "Próxima foto" }));
+    const abrir = screen.getByRole("button", { name: "Ver foto em tela cheia" });
+
+    await usuario.click(abrir);
+
+    const dialogo = screen.getByRole("dialog", { name: "Foto em tela cheia" });
+    const foto = () => within(dialogo).getByRole("img");
+    expect(foto()).toHaveAccessibleName("Chevrolet Onix, foto 2 de 3");
+    expect(foto()).toHaveAttribute("src", "/api/showroom/photos/f2");
+    expect(dialogo).toHaveTextContent("2 de 3");
+    expect(within(dialogo).getByRole("button", { name: "Fechar" })).toHaveFocus();
+    expect(document.documentElement.style.overflow).toBe("hidden");
+
+    await usuario.click(within(dialogo).getByRole("button", { name: "Próxima foto" }));
+    expect(foto()).toHaveAccessibleName("Chevrolet Onix, foto 3 de 3");
+    expect(dialogo).toHaveTextContent("3 de 3");
+
+    await usuario.keyboard("{ArrowRight}");
+    expect(foto()).toHaveAttribute("src", "/api/showroom/photos/f1");
+    expect(dialogo).toHaveTextContent("1 de 3");
+
+    await usuario.click(within(dialogo).getByRole("button", { name: "Foto anterior" }));
+    expect(foto()).toHaveAccessibleName("Chevrolet Onix, foto 3 de 3");
+
+    await usuario.click(within(dialogo).getByRole("button", { name: "Fechar" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(abrir).toHaveFocus();
+    expect(document.documentElement.style.overflow).toBe("");
+    expect(fotoPrincipal()).toHaveAccessibleName("Chevrolet Onix, foto 3 de 3");
+    expect(screen.getByRole("button", { name: "Ver foto 3" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+  });
+
+  it("prende o foco na tela cheia e fecha com Esc", async () => {
+    const usuario = userEvent.setup();
+    simularCarro();
+    renderizarRota(CAMINHO);
+    await usuario.click(await screen.findByRole("button", { name: "Ver foto em tela cheia" }));
+    const dialogo = screen.getByRole("dialog", { name: "Foto em tela cheia" });
+    const fechar = within(dialogo).getByRole("button", { name: "Fechar" });
+    const anterior = within(dialogo).getByRole("button", { name: "Foto anterior" });
+    const proxima = within(dialogo).getByRole("button", { name: "Próxima foto" });
+
+    await usuario.tab();
+    expect(anterior).toHaveFocus();
+    await usuario.tab();
+    expect(proxima).toHaveFocus();
+    await usuario.tab();
+    expect(fechar).toHaveFocus();
+    await usuario.tab({ shift: true });
+    expect(proxima).toHaveFocus();
+
+    await usuario.click(within(dialogo).getByRole("img"));
+    expect(dialogo).toHaveFocus();
+    await usuario.tab({ shift: true });
+    expect(proxima).toHaveFocus();
+
+    await usuario.click(within(dialogo).getByRole("img"));
+    await usuario.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ver foto em tela cheia" })).toHaveFocus();
+    expect(document.documentElement.style.overflow).toBe("");
   });
 
   it("mostra o carro vendido sem preço, sem foto e sem o botão de interesse", async () => {
@@ -165,6 +254,9 @@ describe("PaginaCarro", () => {
     await screen.findByText(/^Globo Motors · WhatsApp/);
     expect(screen.getByText("Consulte")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Sem foto" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Ver foto em tela cheia" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /WhatsApp/ })).not.toBeInTheDocument();
     expect(screen.queryByText("WhatsApp (11) 98765-4321")).not.toBeInTheDocument();
   });

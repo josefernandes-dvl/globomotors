@@ -15,6 +15,7 @@ const TRACOS = {
   abrir: "M6 9l6 6 6-6",
   marcado: "M5 12l5 5L20 7",
   filtros: "M4 6h16M7 12h10M10 18h4",
+  ampliar: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5",
 } as const;
 
 const WHATSAPP =

@@ -5,7 +5,7 @@ import {
   type LojaPublica,
 } from "@globomotors/shared";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { Icone } from "../../componentes/Icone.tsx";
 import { ImagemDoCarro } from "../../componentes/ImagemDoCarro.tsx";
@@ -161,7 +161,12 @@ function DetalheDoCarro({ carro, loja }: { carro: CarroPublico; loja: LojaPublic
 
 function Galeria({ fotos, titulo }: { fotos: FotoCarro[]; titulo: string }) {
   const [indice, setIndice] = useState(0);
+  const [telaCheia, setTelaCheia] = useState(false);
   const total = fotos.length;
+  const fotoAtual = fotos[indice];
+  const descricao = total > 1 ? `${titulo}, foto ${indice + 1} de ${total}` : titulo;
+  const anterior = () => setIndice((indice - 1 + total) % total);
+  const proxima = () => setIndice((indice + 1) % total);
 
   useEffect(() => {
     if (total < 2) return;
@@ -178,19 +183,31 @@ function Galeria({ fotos, titulo }: { fotos: FotoCarro[]; titulo: string }) {
 
   return (
     <section aria-label="Fotos do veículo" className="flex flex-col bg-noite">
-      <div className="relative grid aspect-4/3 place-items-center overflow-hidden">
+      <div className="relative aspect-4/3 overflow-hidden">
         <ImagemDoCarro
-          url={fotos[indice]?.url}
-          alt={total > 1 ? `${titulo}, foto ${indice + 1} de ${total}` : titulo}
+          url={fotoAtual?.url}
+          alt={descricao}
           tom="escuro"
           className="size-full object-contain"
         />
+        {fotoAtual && (
+          <button
+            type="button"
+            aria-label="Ver foto em tela cheia"
+            onClick={() => setTelaCheia(true)}
+            className="group absolute inset-0 cursor-zoom-in focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-acento-claro"
+          >
+            <span className="absolute top-3 right-3 grid size-[42px] place-items-center rounded-full bg-white/14 text-white backdrop-blur-md group-hover:bg-white/26">
+              <Icone nome="ampliar" className="size-5" />
+            </span>
+          </button>
+        )}
         {total > 1 && (
           <>
             <button
               type="button"
               aria-label="Foto anterior"
-              onClick={() => setIndice((indice - 1 + total) % total)}
+              onClick={anterior}
               className={`${navegacao} left-3`}
             >
               <Icone nome="esquerda" className="size-5" />
@@ -198,7 +215,7 @@ function Galeria({ fotos, titulo }: { fotos: FotoCarro[]; titulo: string }) {
             <button
               type="button"
               aria-label="Próxima foto"
-              onClick={() => setIndice((indice + 1) % total)}
+              onClick={proxima}
               className={`${navegacao} right-3`}
             >
               <Icone nome="direita" className="size-5" />
@@ -226,6 +243,116 @@ function Galeria({ fotos, titulo }: { fotos: FotoCarro[]; titulo: string }) {
           ))}
         </div>
       )}
+      {telaCheia && fotoAtual && (
+        <TelaCheia
+          url={fotoAtual.url}
+          descricao={descricao}
+          indice={indice}
+          total={total}
+          onAnterior={anterior}
+          onProxima={proxima}
+          onFechar={() => setTelaCheia(false)}
+        />
+      )}
     </section>
+  );
+}
+
+interface PropsTelaCheia {
+  url: string;
+  descricao: string;
+  indice: number;
+  total: number;
+  onAnterior: () => void;
+  onProxima: () => void;
+  onFechar: () => void;
+}
+
+function TelaCheia({
+  url,
+  descricao,
+  indice,
+  total,
+  onAnterior,
+  onProxima,
+  onFechar,
+}: PropsTelaCheia) {
+  const fechar = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const focoAnterior = document.activeElement;
+    const raiz = document.documentElement;
+    raiz.style.overflow = "hidden";
+    fechar.current?.focus();
+    return () => {
+      raiz.style.overflow = "";
+      if (focoAnterior instanceof HTMLElement) focoAnterior.focus();
+    };
+  }, []);
+
+  const botao =
+    "absolute grid size-11 cursor-pointer place-items-center rounded-full bg-black/55 text-white ring-1 ring-white/20 hover:bg-black/80";
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Foto em tela cheia"
+      tabIndex={-1}
+      onKeyDown={(evento) => {
+        if (evento.key === "Escape") onFechar();
+        if (evento.key !== "Tab") return;
+        const botoes = evento.currentTarget.querySelectorAll("button");
+        const primeiro = botoes[0];
+        const ultimo = botoes[botoes.length - 1];
+        const foco = document.activeElement;
+        const saindo = evento.shiftKey
+          ? foco === primeiro || foco === evento.currentTarget
+          : foco === ultimo;
+        if (!saindo) return;
+        evento.preventDefault();
+        (evento.shiftKey ? ultimo : primeiro)?.focus();
+      }}
+      className="fixed inset-0 z-40 bg-black text-white outline-none"
+    >
+      <img src={url} alt={descricao} className="size-full object-contain" />
+      {total > 1 && (
+        <p
+          aria-hidden="true"
+          className="absolute top-5 left-3 rounded-full bg-black/55 px-3 py-1 text-sm font-semibold tabular-nums ring-1 ring-white/20"
+        >
+          {indice + 1} de {total}
+        </p>
+      )}
+      <button
+        ref={fechar}
+        type="button"
+        aria-label="Fechar"
+        onClick={onFechar}
+        className={`${botao} top-3 right-3`}
+      >
+        <Icone nome="fechar" className="size-5" />
+      </button>
+      {total > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="Foto anterior"
+            onClick={onAnterior}
+            className={`${botao} top-1/2 left-3 -translate-y-1/2`}
+          >
+            <Icone nome="esquerda" className="size-5" />
+          </button>
+          <button
+            type="button"
+            aria-label="Próxima foto"
+            onClick={onProxima}
+            className={`${botao} top-1/2 right-3 -translate-y-1/2`}
+          >
+            <Icone nome="direita" className="size-5" />
+          </button>
+        </>
+      )}
+    </div>
   );
 }
