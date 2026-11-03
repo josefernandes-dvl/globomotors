@@ -49,7 +49,7 @@ export const CARROCERIAS = [
 export type Carroceria = (typeof CARROCERIAS)[number];
 
 export const MAX_FOTOS_POR_CARRO = 20;
-export const TAMANHO_MAXIMO_FOTO = 5 * 1024 * 1024;
+export const TAMANHO_MAXIMO_FOTO = 4 * 1024 * 1024;
 export const TIPOS_DE_FOTO = ["image/jpeg", "image/png", "image/webp"] as const;
 export type TipoDeFoto = (typeof TIPOS_DE_FOTO)[number];
 

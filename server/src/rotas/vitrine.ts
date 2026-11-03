@@ -70,7 +70,10 @@ export function rotasVitrine(repositorios: Repositorios) {
     const loja = await repositorios.loja.obter();
     const foto = await repositorios.fotos.buscarPublica(id, statusVisiveis(loja));
     if (!foto) throw naoEncontrado("Foto não encontrada.");
-    res.set("Cache-Control", "public, max-age=86400").type(foto.tipoMime).send(foto.dados);
+    res
+      .set("Cache-Control", "public, max-age=86400, s-maxage=86400")
+      .type(foto.tipoMime)
+      .send(foto.dados);
   });
 
   return rotas;

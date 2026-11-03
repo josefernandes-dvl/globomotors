@@ -1,5 +1,5 @@
 import express from "express";
-import helmet from "helmet";
+import helmet, { type HelmetOptions } from "helmet";
 import type { Logger } from "pino";
 import { rotaNaoEncontrada, tratarErros } from "./middlewares/erros.ts";
 import { logDeRequisicoes } from "./middlewares/log.ts";
@@ -18,6 +18,10 @@ interface OpcoesApp {
   confiarEmProxy?: number;
 }
 
+export const opcoesHelmet: HelmetOptions = {
+  contentSecurityPolicy: { directives: { imgSrc: ["'self'", "data:", "blob:"] } },
+};
+
 export function criarApp({
   repositorios,
   logger,
@@ -28,9 +32,7 @@ export function criarApp({
   const app = express();
   app.set("trust proxy", confiarEmProxy);
 
-  app.use(
-    helmet({ contentSecurityPolicy: { directives: { imgSrc: ["'self'", "data:", "blob:"] } } }),
-  );
+  app.use(helmet(opcoesHelmet));
   app.use(logDeRequisicoes(logger));
   app.use(exigirMesmaOrigem);
   app.use(express.json());
