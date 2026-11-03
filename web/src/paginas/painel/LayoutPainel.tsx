@@ -99,9 +99,9 @@ function Painel({ usuario }: { usuario: Usuario }) {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <Link to="/" target="_blank" className="botao botao-pequeno botao-escuro">
+            <Link to="/catalogo" target="_blank" className="botao botao-pequeno botao-escuro">
               <Icone nome="externo" />
-              Ver vitrine
+              Ver catálogo
             </Link>
             <span className="max-w-40 truncate text-sm text-noite-prata">{usuario.nome}</span>
             <button

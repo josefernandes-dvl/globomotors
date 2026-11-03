@@ -124,7 +124,7 @@ describe("PaginaFormularioCarro", () => {
       const privada = screen
         .getByRole("heading", { level: 2, name: "Só para você" })
         .closest("section");
-      expect(privada).toHaveTextContent("Nada desta parte aparece na vitrine.");
+      expect(privada).toHaveTextContent("Nada desta parte aparece no catálogo.");
       const vendedor = screen.getByRole("group", { name: "Vendedor" });
       expect(privada).toContainElement(vendedor);
       expect(privada).toContainElement(screen.getByLabelText("Preço de compra (R$)"));
@@ -137,6 +137,7 @@ describe("PaginaFormularioCarro", () => {
       expect(screen.getByLabelText("Câmbio")).toHaveDisplayValue("Selecione");
       expect(itensAdicionais()).toEqual([]);
       expect(document.body).not.toHaveTextContent("—");
+      expect(document.body).not.toHaveTextContent(/vitrine/i);
       expect(screen.getByText("0 de 20")).toBeInTheDocument();
       expect(fotosNaTela()).toEqual([]);
       expect(formulario()).toHaveFormValues({
@@ -152,7 +153,7 @@ describe("PaginaFormularioCarro", () => {
       });
       expect(valorDe("Margem estimada:")).toHaveTextContent("informe venda e compra");
       expect(valorDe("Em estoque há:")).toHaveTextContent(/^0 dias$/);
-      expect(screen.queryByRole("link", { name: "Ver na vitrine" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Ver no catálogo" })).not.toBeInTheDocument();
       expect(
         screen.getByText(
           "Depois de salvar o carro, você pode registrar os clientes interessados nele.",
@@ -340,7 +341,7 @@ describe("PaginaFormularioCarro", () => {
       await usuario.selectOptions(screen.getByLabelText("Combustível"), "Flex");
       await usuario.selectOptions(screen.getByLabelText("Carroceria"), "SUV");
       await usuario.selectOptions(screen.getByLabelText("Status"), "Disponível");
-      await usuario.click(screen.getByLabelText("Destaque na vitrine"));
+      await usuario.click(screen.getByLabelText("Destaque no catálogo"));
       await usuario.click(screen.getByRole("button", { name: "Adicionar ao catálogo" }));
 
       expect(await screen.findByRole("button", { name: "Salvando…" })).toBeDisabled();
@@ -691,9 +692,9 @@ describe("PaginaFormularioCarro", () => {
       expect(valorDe("Em estoque há:")).toHaveTextContent(/^29 dias$/);
       expect(screen.getByText("2 de 20")).toBeInTheDocument();
       expect(fotosNaTela()).toEqual(["/api/dashboard/photos/f1", "/api/dashboard/photos/f2"]);
-      const vitrine = screen.getByRole("link", { name: "Ver na vitrine" });
-      expect(vitrine).toHaveAttribute("href", "/catalogo/chevrolet-onix-2021-c1");
-      expect(vitrine).toHaveAttribute("target", "_blank");
+      const catalogo = screen.getByRole("link", { name: "Ver no catálogo" });
+      expect(catalogo).toHaveAttribute("href", "/catalogo/chevrolet-onix-2021-c1");
+      expect(catalogo).toHaveAttribute("target", "_blank");
       await waitFor(() => expect(document.title).toBe("Editar carro · Painel"));
       expect(screen.getByRole("button", { name: "Salvar alterações" })).toBeEnabled();
 
@@ -712,13 +713,13 @@ describe("PaginaFormularioCarro", () => {
       ["reservado", true],
       ["rascunho", false],
       ["vendido", false],
-    ])("com o carro %s, o link da vitrine aparece: %s", async (status, publicado) => {
+    ])("com o carro %s, o link do catálogo aparece: %s", async (status, publicado) => {
       simularFormulario({ "GET /api/dashboard/cars/c1": { carro: carroPainel({ status }) } });
 
       renderizarRota("/dashboard/cars/c1");
 
       expect(await screen.findByLabelText("Status")).toHaveValue(status);
-      expect(screen.queryByRole("link", { name: "Ver na vitrine" }) !== null).toBe(publicado);
+      expect(screen.queryByRole("link", { name: "Ver no catálogo" }) !== null).toBe(publicado);
     });
 
     it("salva as alterações sem mexer nas fotos", async () => {
@@ -728,7 +729,7 @@ describe("PaginaFormularioCarro", () => {
       await screen.findByLabelText("Marca *");
 
       await preencher(usuario, { "Preço de venda (R$)": "87.500" });
-      await usuario.click(screen.getByLabelText("Destaque na vitrine"));
+      await usuario.click(screen.getByLabelText("Destaque no catálogo"));
       await usuario.click(screen.getByRole("button", { name: "Salvar alterações" }));
 
       expect(await screen.findByText("Alterações salvas.")).toHaveAttribute("role", "status");

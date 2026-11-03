@@ -61,7 +61,7 @@ function FormularioLoja({ loja }: { loja: Loja }) {
   const avisar = useAvisos();
   const [valores, setValores] = useState(() => valoresDaLoja(loja));
   const [erros, setErros] = useState<ErrosDoFormulario>({});
-  const linkDaVitrine = `${window.location.origin}/`;
+  const linkDoCatalogo = `${window.location.origin}/catalogo`;
 
   const salvar = useMutation({
     mutationFn: (dados: Loja) => api.put<{ loja: Loja }>("/dashboard/store", dados),
@@ -111,8 +111,8 @@ function FormularioLoja({ loja }: { loja: Loja }) {
 
   async function copiarLink() {
     try {
-      await navigator.clipboard.writeText(linkDaVitrine);
-      avisar("Link da vitrine copiado.");
+      await navigator.clipboard.writeText(linkDoCatalogo);
+      avisar("Link do catálogo copiado.");
     } catch {
       avisar("Não foi possível copiar. Selecione o link e copie manualmente.", "erro");
     }
@@ -132,7 +132,7 @@ function FormularioLoja({ loja }: { loja: Loja }) {
           <CampoTexto
             rotulo="Slogan"
             maxLength={140}
-            dica="Aparece no topo da vitrine."
+            dica="Aparece no topo da página inicial."
             className="sm:col-span-2"
             {...campo("slogan")}
           />
@@ -147,12 +147,15 @@ function FormularioLoja({ loja }: { loja: Loja }) {
           <CampoTexto rotulo="Instagram" placeholder="@globomotors" {...campo("instagram")} />
         </div>
         <fieldset className="flex flex-col gap-2">
-          <legend className="rotulo mb-1">Vitrine</legend>
-          <CampoMarcar rotulo="Mostrar preços na vitrine" {...marcar("mostrarPreco")} />
+          <legend className="rotulo mb-1">Catálogo</legend>
+          <CampoMarcar rotulo="Mostrar preços no catálogo" {...marcar("mostrarPreco")} />
           <p className="-mt-1 ml-6 text-xs text-suave">
-            Desmarcado, a vitrine mostra “Consulte” e o preço não sai do servidor.
+            Desmarcado, o catálogo mostra “Consulte” e o preço não sai do servidor.
           </p>
-          <CampoMarcar rotulo="Mostrar carros vendidos na vitrine" {...marcar("mostrarVendidos")} />
+          <CampoMarcar
+            rotulo="Mostrar carros vendidos no catálogo"
+            {...marcar("mostrarVendidos")}
+          />
         </fieldset>
         <div className="flex justify-end">
           <button type="submit" disabled={salvar.isPending} className="botao botao-primario">
@@ -162,18 +165,18 @@ function FormularioLoja({ loja }: { loja: Loja }) {
       </form>
 
       <aside className={`${SECAO} flex flex-col gap-3`}>
-        <h2 className="text-base font-extrabold font-stretch-[112%]">Link da vitrine</h2>
+        <h2 className="text-base font-extrabold font-stretch-[112%]">Link do catálogo</h2>
         <p className="text-sm text-suave">
-          É este o endereço que você divulga. Quem abre vê só a vitrine: carros publicados, sem
+          É este o endereço que você divulga. Quem abre vê só o catálogo: carros publicados, sem
           acesso ao painel.
         </p>
         <a
-          href={linkDaVitrine}
+          href={linkDoCatalogo}
           target="_blank"
           rel="noreferrer"
           className="truncate rounded-lg border border-linha bg-papel px-3 py-2 text-sm font-semibold text-acento"
         >
-          {linkDaVitrine}
+          {linkDoCatalogo}
         </a>
         <button type="button" onClick={() => void copiarLink()} className="botao">
           <Icone nome="copiar" />

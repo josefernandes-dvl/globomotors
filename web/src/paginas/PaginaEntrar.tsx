@@ -85,8 +85,8 @@ export function PaginaEntrar() {
             {entrar.isPending ? "Entrando…" : "Entrar"}
           </button>
         </form>
-        <Link to="/" className="mt-5 block text-center text-sm font-semibold text-acento">
-          Ver a vitrine
+        <Link to="/catalogo" className="mt-5 block text-center text-sm font-semibold text-acento">
+          Ver o catálogo
         </Link>
       </div>
     </main>

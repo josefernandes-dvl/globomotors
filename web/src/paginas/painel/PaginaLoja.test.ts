@@ -11,7 +11,7 @@ import {
   type RotasSimuladas,
 } from "../../testes/simularApi.ts";
 
-const LINK = `${window.location.origin}/`;
+const LINK = `${window.location.origin}/catalogo`;
 const SALVAR = { name: "Salvar dados da loja" };
 
 function simularLoja(rotas: RotasSimuladas = {}) {
@@ -41,7 +41,7 @@ async function preencher(usuario: UserEvent, campos: Record<string, string>) {
 }
 
 describe("PaginaLoja", () => {
-  it("preenche o formulário com os dados da loja e mostra o link da vitrine", async () => {
+  it("preenche o formulário com os dados da loja e mostra o link do catálogo", async () => {
     const api = simularLoja();
     renderizarRota("/dashboard/store");
 
@@ -52,22 +52,23 @@ describe("PaginaLoja", () => {
     expect(screen.getByLabelText("Cidade")).toHaveAttribute("placeholder", "São Paulo, SP");
     expect(screen.getByLabelText("Slogan")).toHaveValue("Seminovos com procedência");
     expect(screen.getByLabelText("Slogan")).toHaveAccessibleDescription(
-      "Aparece no topo da vitrine.",
+      "Aparece no topo da página inicial.",
     );
     expect(screen.getByLabelText("WhatsApp da loja")).toHaveValue("(11) 98765-4321");
     expect(screen.getByLabelText("WhatsApp da loja")).toHaveAccessibleDescription(
       "Recebe as mensagens dos clientes que clicam em “Tenho interesse”.",
     );
     expect(screen.getByLabelText("Instagram")).toHaveValue("@globomotors");
-    expect(screen.getByRole("checkbox", { name: "Mostrar preços na vitrine" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Mostrar preços no catálogo" })).toBeChecked();
     expect(
-      screen.getByRole("checkbox", { name: "Mostrar carros vendidos na vitrine" }),
+      screen.getByRole("checkbox", { name: "Mostrar carros vendidos no catálogo" }),
     ).not.toBeChecked();
 
     const link = screen.getByRole("link", { name: LINK });
     expect(link).toHaveAttribute("href", LINK);
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noreferrer");
+    expect(document.body).not.toHaveTextContent(/vitrine/i);
     expect(alteracoes(api.chaves())).toEqual([]);
   });
 
@@ -163,9 +164,9 @@ describe("PaginaLoja", () => {
       "WhatsApp da loja": "+55 (19) 3333-4444",
       Instagram: "https://www.instagram.com/auto.center/",
     });
-    await usuario.click(screen.getByRole("checkbox", { name: "Mostrar preços na vitrine" }));
+    await usuario.click(screen.getByRole("checkbox", { name: "Mostrar preços no catálogo" }));
     await usuario.click(
-      screen.getByRole("checkbox", { name: "Mostrar carros vendidos na vitrine" }),
+      screen.getByRole("checkbox", { name: "Mostrar carros vendidos no catálogo" }),
     );
     await usuario.click(screen.getByRole("button", SALVAR));
 
@@ -182,9 +183,9 @@ describe("PaginaLoja", () => {
     expect(screen.getByLabelText("Slogan")).toHaveValue("Os melhores seminovos");
     expect(screen.getByLabelText("WhatsApp da loja")).toHaveValue("(19) 3333-4444");
     expect(screen.getByLabelText("Instagram")).toHaveValue("@auto.center");
-    expect(screen.getByRole("checkbox", { name: "Mostrar preços na vitrine" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Mostrar preços no catálogo" })).not.toBeChecked();
     expect(
-      screen.getByRole("checkbox", { name: "Mostrar carros vendidos na vitrine" }),
+      screen.getByRole("checkbox", { name: "Mostrar carros vendidos no catálogo" }),
     ).toBeChecked();
     expect(nomeNoTopo()).toMatch(/^Auto Center Campinas/);
     expect(queryClient.getQueryState(["vitrine", "loja"])?.isInvalidated).toBe(true);
@@ -245,7 +246,7 @@ describe("PaginaLoja", () => {
     expect(screen.queryByRole("button", { name: "Tentar de novo" })).not.toBeInTheDocument();
   });
 
-  it("copia o link da vitrine", async () => {
+  it("copia o link do catálogo", async () => {
     const usuario = userEvent.setup();
     simularLoja();
     renderizarRota("/dashboard/store");
@@ -253,7 +254,7 @@ describe("PaginaLoja", () => {
 
     await usuario.click(await screen.findByRole("button", { name: "Copiar link" }));
 
-    expect(await screen.findByText("Link da vitrine copiado.")).toHaveAttribute("role", "status");
+    expect(await screen.findByText("Link do catálogo copiado.")).toHaveAttribute("role", "status");
     expect(copiar).toHaveBeenCalledTimes(1);
     expect(await navigator.clipboard.readText()).toBe(LINK);
   });

@@ -683,14 +683,14 @@ async function prepararDados() {
 Dados prontos (sufixo ${sufixo}): ${carros.size} carros, ${clientes.size} clientes e ${INTERESSES.length} interesses.
 
 Página inicial      ${WEB}/
-Vitrine (pública)   ${WEB}/catalogo
+Catálogo            ${WEB}/catalogo
 Página de um carro  ${WEB}/catalogo/${buscar(carros, "onix").slug}
 Entrar              ${WEB}/login
   e-mail            ${email}
   senha             ${SENHA}
 Carros do painel    ${WEB}/dashboard/cars
 Funil               ${WEB}/dashboard/funnel
-Rascunho (fora da vitrine)  ${WEB}/dashboard/cars/${buscar(carros, "fit").id}
+Rascunho (fora do catálogo)  ${WEB}/dashboard/cars/${buscar(carros, "fit").id}
 `);
 }
 

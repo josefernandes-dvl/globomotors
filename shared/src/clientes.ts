@@ -9,10 +9,10 @@ import {
 } from "./campos.ts";
 
 export const ORIGENS_CLIENTE = [
+  "vitrine",
   "indicacao",
   "instagram",
   "marketplace",
-  "vitrine",
   "whatsapp",
   "loja",
   "outro",
@@ -20,10 +20,10 @@ export const ORIGENS_CLIENTE = [
 export type OrigemCliente = (typeof ORIGENS_CLIENTE)[number];
 
 export const ROTULOS_ORIGEM_CLIENTE: Record<OrigemCliente, string> = {
+  vitrine: "Catálogo",
   indicacao: "Indicação",
   instagram: "Instagram",
   marketplace: "Marketplace",
-  vitrine: "Vitrine",
   whatsapp: "WhatsApp",
   loja: "Visita à loja",
   outro: "Outro",

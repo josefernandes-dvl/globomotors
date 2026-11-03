@@ -485,7 +485,7 @@ describe("PaginaCatalogo", () => {
   it("avisa quando o PDF não pode ser gerado", async () => {
     const usuario = userEvent.setup();
     vi.mocked(gerarCatalogoPdf).mockRejectedValue(
-      new Error("Não há carros publicados na vitrine para exportar."),
+      new Error("Não há carros publicados no catálogo para exportar."),
     );
     simularCatalogo();
     await abrirCatalogo();
@@ -493,7 +493,7 @@ describe("PaginaCatalogo", () => {
     await usuario.click(screen.getByRole("button", { name: "Baixar PDF" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Não há carros publicados na vitrine para exportar.",
+      "Não há carros publicados no catálogo para exportar.",
     );
     expect(screen.getByRole("button", { name: "Baixar PDF" })).toBeEnabled();
   });
@@ -508,7 +508,7 @@ describe("PaginaCatalogo", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Cadastre o primeiro carro. Ele entra como rascunho e só vai para a vitrine quando você publicar.",
+        "Cadastre o primeiro carro. Ele entra como rascunho e só vai para o catálogo quando você publicar.",
       ),
     ).toBeInTheDocument();
     expect(

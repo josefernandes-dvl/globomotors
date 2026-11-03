@@ -140,7 +140,7 @@ export function PaginaCatalogo() {
     conteudo = (
       <CaixaVazia titulo="Seu catálogo está vazio">
         <p>
-          Cadastre o primeiro carro. Ele entra como rascunho e só vai para a vitrine quando você
+          Cadastre o primeiro carro. Ele entra como rascunho e só vai para o catálogo quando você
           publicar.
         </p>
         <Link to="/dashboard/cars/new" className="botao botao-primario mt-4">
@@ -192,7 +192,7 @@ export function PaginaCatalogo() {
             type="button"
             onClick={() => pdf.mutate()}
             disabled={pdf.isPending}
-            title="Catálogo em PDF com os carros publicados na vitrine"
+            title="Catálogo em PDF com os carros publicados"
             className="botao"
           >
             <Icone nome="baixar" />

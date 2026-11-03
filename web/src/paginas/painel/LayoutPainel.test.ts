@@ -40,8 +40,8 @@ describe("LayoutPainel", () => {
       "aria-current",
       "page",
     );
-    expect(screen.getByRole("link", { name: "Ver vitrine" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Ver vitrine" })).toHaveAttribute("target", "_blank");
+    expect(screen.getByRole("link", { name: "Ver catálogo" })).toHaveAttribute("href", "/catalogo");
+    expect(screen.getByRole("link", { name: "Ver catálogo" })).toHaveAttribute("target", "_blank");
     expect(screen.getByText(USUARIO.nome)).toBeInTheDocument();
   });
 

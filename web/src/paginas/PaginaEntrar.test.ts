@@ -38,7 +38,10 @@ describe("PaginaEntrar", () => {
     expect(
       screen.getByText("Entre com o e-mail e a senha cadastrados pela loja."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver a vitrine" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Ver o catálogo" })).toHaveAttribute(
+      "href",
+      "/catalogo",
+    );
     await waitFor(() => expect(document.title).toBe("Entrar · Painel do vendedor"));
 
     await usuario.click(screen.getByRole("button", { name: "Entrar" }));

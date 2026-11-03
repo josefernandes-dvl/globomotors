@@ -94,10 +94,10 @@ describe("PaginaCliente", () => {
       });
       expect(opcoes(screen.getByLabelText("Como conheceu a loja"))).toEqual([
         "Selecione",
+        "Catálogo",
         "Indicação",
         "Instagram",
         "Marketplace",
-        "Vitrine",
         "WhatsApp",
         "Visita à loja",
         "Outro",

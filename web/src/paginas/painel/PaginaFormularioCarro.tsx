@@ -276,7 +276,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
         publicado && (
           <a href={`/catalogo/${carro.slug}`} target="_blank" rel="noreferrer" className="botao">
             <Icone nome="externo" />
-            Ver na vitrine
+            Ver no catálogo
           </a>
         )
       }
@@ -336,7 +336,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
                 rotulo="Preço de venda (R$)"
                 inputMode="decimal"
                 placeholder="89.900"
-                dica="Em branco, a vitrine mostra “Consulte”."
+                dica="Em branco, o catálogo mostra “Consulte”."
                 className="col-span-2"
                 {...campo("precoVenda")}
               />
@@ -349,7 +349,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
               </CampoSelecao>
               <div className="col-span-2 flex items-end pb-2.5">
                 <CampoMarcar
-                  rotulo="Destaque na vitrine"
+                  rotulo="Destaque no catálogo"
                   name="destaque"
                   checked={valores.destaque}
                   onChange={(evento) =>
@@ -373,7 +373,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
           <section className={SECAO_PRIVADA}>
             <h2 className="text-base font-extrabold font-stretch-[112%]">Só para você</h2>
             <p className="mt-0.5 mb-3 text-[13px] text-suave">
-              Nada desta parte aparece na vitrine.
+              Nada desta parte aparece no catálogo.
             </p>
             <div className={GRADE}>
               <fieldset className="col-span-2 rounded-xl border border-[#ecdcb4] bg-papel/70 p-3 sm:col-span-6">

@@ -1,6 +1,6 @@
 # GloboMotors
 
-Site de uma garagem de carros: vitrine pública (sem login, só leitura) e painel do vendedor com cadastro de carros e CRM.
+Site de uma garagem de carros: página inicial e catálogo públicos (sem login, só leitura) e painel do vendedor com cadastro de carros e CRM.
 
 ## Requisitos
 
@@ -25,7 +25,8 @@ npm run dev                           # API :3001 + web :5173
 npm run verificar                     # em outro terminal: confere Node, banco, API e proxy
 ```
 
-- Vitrine: página inicial em http://localhost:5173 e catálogo em http://localhost:5173/catalogo
+- Página inicial: http://localhost:5173
+- Catálogo: http://localhost:5173/catalogo
 - Painel do vendedor: http://localhost:5173/dashboard (pede login em http://localhost:5173/login)
 - Saúde da API: http://localhost:3001/api/health
 
