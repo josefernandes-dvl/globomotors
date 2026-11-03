@@ -20,7 +20,7 @@ const HB20 = carroPublico({
   opcionais: [],
   fotos: [{ id: "f1", url: "/api/showroom/photos/f1" }],
   preco: 5_500_000,
-  status: "reservado",
+  status: "vendido",
 });
 const COMPASS = carroPublico({
   slug: "jeep-compass-2023-j1",
@@ -69,7 +69,7 @@ function opcoesDoGrupo(nome: string) {
 }
 
 describe("PaginaVitrine", () => {
-  it("mostra o catálogo com os destaques primeiro e os reservados no fim", async () => {
+  it("mostra o catálogo com os destaques primeiro e os vendidos no fim", async () => {
     await abrirVitrine();
 
     expect(titulosDosCarros()).toEqual(["Jeep Compass", "Chevrolet Onix", "Hyundai HB20"]);
@@ -105,7 +105,7 @@ describe("PaginaVitrine", () => {
     expect(within(compass).getByText("Ver detalhes →").textContent).toBe("Ver detalhes\u00a0→");
 
     const onix = screen.getByRole("link", { name: /Chevrolet Onix/ });
-    expect(within(onix).queryByText(/^(Destaque|Reservado|Vendido)$/)).not.toBeInTheDocument();
+    expect(within(onix).queryByText(/^(Destaque|Vendido)$/)).not.toBeInTheDocument();
     expect(within(onix).getByText("42.000 km · Automático")).toBeInTheDocument();
     expect(within(onix).getByText("Ver detalhes e preço →").textContent).toBe(
       "Ver detalhes e preço\u00a0→",
@@ -113,7 +113,7 @@ describe("PaginaVitrine", () => {
     expect(within(onix).queryByText(/R\$/)).not.toBeInTheDocument();
 
     const hb20 = screen.getByRole("link", { name: /Hyundai HB20/ });
-    expect(within(hb20).getByText("Reservado")).toBeInTheDocument();
+    expect(within(hb20).getByText("Vendido")).toBeInTheDocument();
     expect(within(hb20).getByText("80.000 km · Manual")).toBeInTheDocument();
     expect(within(hb20).getByRole("presentation")).toHaveAttribute(
       "src",

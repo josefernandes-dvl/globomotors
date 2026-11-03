@@ -709,18 +709,17 @@ describe("PaginaFormularioCarro", () => {
       );
     });
 
-    it.each<[StatusCarro, boolean]>([
-      ["reservado", true],
-      ["rascunho", false],
-      ["vendido", false],
-    ])("com o carro %s, o link do catálogo aparece: %s", async (status, publicado) => {
-      simularFormulario({ "GET /api/dashboard/cars/c1": { carro: carroPainel({ status }) } });
+    it.each<StatusCarro>(["reservado", "rascunho", "vendido"])(
+      "não mostra o link do catálogo com o carro %s",
+      async (status) => {
+        simularFormulario({ "GET /api/dashboard/cars/c1": { carro: carroPainel({ status }) } });
 
-      renderizarRota("/dashboard/cars/c1");
+        renderizarRota("/dashboard/cars/c1");
 
-      expect(await screen.findByLabelText("Status")).toHaveValue(status);
-      expect(screen.queryByRole("link", { name: "Ver no catálogo" }) !== null).toBe(publicado);
-    });
+        expect(await screen.findByLabelText("Status")).toHaveValue(status);
+        expect(screen.queryByRole("link", { name: "Ver no catálogo" })).not.toBeInTheDocument();
+      },
+    );
 
     it("salva as alterações sem mexer nas fotos", async () => {
       const usuario = userEvent.setup();

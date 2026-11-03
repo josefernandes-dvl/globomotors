@@ -11,7 +11,6 @@ const HB20 = carroPublico({
   slug: "hyundai-hb20-2019-h1",
   marca: "Hyundai",
   modelo: "HB20",
-  status: "reservado",
 });
 const COROLLA = carroPublico({
   slug: "toyota-corolla-2018-t1",
@@ -66,7 +65,7 @@ describe("PaginaInicial", () => {
     expect(whatsapp).toHaveAttribute("href", WHATSAPP);
     expect(whatsapp).toHaveAttribute("target", "_blank");
     expect(await screen.findByText(/disponíveis agora$/)).toHaveTextContent(
-      /^4 veículos disponíveis agora$/,
+      /^5 veículos disponíveis agora$/,
     );
     expect(screen.getByRole("link", { name: "@globomotors" })).toHaveAttribute(
       "href",
@@ -78,7 +77,7 @@ describe("PaginaInicial", () => {
     await waitFor(() => expect(document.title).toBe("Globo Motors"));
   });
 
-  it("mostra até quatro carros em destaque, sem os vendidos e com os reservados por último", async () => {
+  it("mostra até quatro carros em destaque, com os destaques primeiro e sem os vendidos", async () => {
     simularInicio();
 
     renderizarRota("/");
@@ -86,9 +85,9 @@ describe("PaginaInicial", () => {
     await screen.findByRole("heading", { level: 3, name: "Jeep Compass" });
     expect(titulosEmDestaque()).toEqual([
       "Jeep Compass",
+      "Hyundai HB20",
       "Chevrolet Onix",
       "Fiat Argo",
-      "Volkswagen Polo",
     ]);
     const secao = screen.getByRole("region", { name: "Em destaque" });
     expect(within(secao).getByRole("list")).toHaveClass("grid-cols-2");
@@ -99,15 +98,15 @@ describe("PaginaInicial", () => {
     ).toEqual([
       "/catalogo",
       "/catalogo/jeep-compass-2023-j1",
+      "/catalogo/hyundai-hb20-2019-h1",
       "/catalogo/chevrolet-onix-2021-c1",
       "/catalogo/fiat-argo-2022-a1",
-      "/catalogo/volkswagen-polo-2020-p1",
     ]);
     expect(within(secao).getByRole("link", { name: "Ver todos" })).toHaveAttribute(
       "href",
       "/catalogo",
     );
-    expect(screen.queryByText(/Toyota|Hyundai/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Toyota|Volkswagen/)).not.toBeInTheDocument();
   });
 
   it("explica como comprar e leva ao WhatsApp da loja", async () => {
@@ -140,9 +139,9 @@ describe("PaginaInicial", () => {
       WHATSAPP,
       "/catalogo",
       "/catalogo/jeep-compass-2023-j1",
+      "/catalogo/hyundai-hb20-2019-h1",
       "/catalogo/chevrolet-onix-2021-c1",
       "/catalogo/fiat-argo-2022-a1",
-      "/catalogo/volkswagen-polo-2020-p1",
       WHATSAPP,
       "https://instagram.com/globomotors",
     ]);
@@ -195,13 +194,13 @@ describe("PaginaInicial", () => {
     const secao = await screen.findByRole("region", { name: "Em destaque" });
     expect(within(secao).getByRole("status")).toHaveTextContent("Carregando veículos…");
     expect(contagem()).not.toBeInTheDocument();
-    responder({ carros: [HB20, COROLLA, ONIX] });
+    responder({ carros: [COROLLA, ONIX] });
 
     expect(
-      await screen.findByRole("heading", { level: 3, name: "Hyundai HB20" }),
+      await screen.findByRole("heading", { level: 3, name: "Chevrolet Onix" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
-    expect(titulosEmDestaque()).toEqual(["Chevrolet Onix", "Hyundai HB20"]);
+    expect(titulosEmDestaque()).toEqual(["Chevrolet Onix"]);
     expect(contagem()).toHaveTextContent(/^1 veículo disponível agora$/);
   });
 

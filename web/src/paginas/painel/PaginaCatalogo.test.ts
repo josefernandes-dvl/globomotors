@@ -363,7 +363,7 @@ describe("PaginaCatalogo", () => {
     expect(numeros()).toMatchObject({ Disponíveis: "1", Vendidos: "1" });
   });
 
-  it("copia a ficha com o link da vitrine só para carro publicado e sem o vendedor", async () => {
+  it("copia a ficha com o link do catálogo só para carro disponível e sem o vendedor", async () => {
     const usuario = userEvent.setup();
     simularCatalogo();
     const onix = await abrirCatalogo();
@@ -381,7 +381,7 @@ describe("PaginaCatalogo", () => {
     expect(ficha).not.toContain("ABC1D23");
     expect(ficha).not.toMatch(/Auto Lima|62988887777|\(62\)/);
 
-    for (const titulo of ["Jeep Compass", "Renault Kwid"]) {
+    for (const titulo of ["Hyundai HB20", "Jeep Compass", "Renault Kwid"]) {
       await usuario.click(within(cartao(titulo)).getByRole("button", { name: "Ficha" }));
       const semLink = await navigator.clipboard.readText();
       expect(semLink).toContain(`*${titulo}`);

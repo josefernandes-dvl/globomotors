@@ -19,7 +19,7 @@ export const ROTULOS_STATUS_CARRO: Record<StatusCarro, string> = {
   vendido: "Vendido",
 };
 
-export type StatusPublico = Exclude<StatusCarro, "rascunho">;
+export type StatusPublico = Extract<StatusCarro, "disponivel" | "vendido">;
 
 export const CAMBIOS = ["Manual", "Automático", "CVT", "Automatizado"] as const;
 export type Cambio = (typeof CAMBIOS)[number];

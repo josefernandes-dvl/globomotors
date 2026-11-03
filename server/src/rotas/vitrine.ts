@@ -5,9 +5,7 @@ import type { Repositorios } from "../repositorios/index.ts";
 import { idDaRota, naoEncontrado } from "./parametros.ts";
 
 function statusVisiveis(loja: Loja): StatusPublico[] {
-  return loja.mostrarVendidos
-    ? ["disponivel", "reservado", "vendido"]
-    : ["disponivel", "reservado"];
+  return loja.mostrarVendidos ? ["disponivel", "vendido"] : ["disponivel"];
 }
 
 function paraLojaPublica(loja: Loja): LojaPublica {

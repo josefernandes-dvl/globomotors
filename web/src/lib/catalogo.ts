@@ -158,8 +158,7 @@ export function ordenarCarros<T extends CarroDoCatalogo>(
     recentes: () => 0,
     destaque: (a, b) =>
       Number(a.status === "vendido") - Number(b.status === "vendido") ||
-      Number(b.destaque) - Number(a.destaque) ||
-      Number(a.status === "reservado") - Number(b.status === "reservado"),
+      Number(b.destaque) - Number(a.destaque),
     precoAsc: (a, b) => (precoDe(a) ?? Infinity) - (precoDe(b) ?? Infinity),
     precoDesc: (a, b) => (precoDe(b) ?? -Infinity) - (precoDe(a) ?? -Infinity),
     ano: (a, b) => (anoDe(b) ?? 0) - (anoDe(a) ?? 0),

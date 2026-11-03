@@ -105,7 +105,7 @@ export function PaginaCatalogo() {
   });
 
   async function copiarFicha(carro: CarroPainel) {
-    const publicado = carro.status === "disponivel" || carro.status === "reservado";
+    const publicado = carro.status === "disponivel";
     const texto = fichaDoCarro(carro, loja, publicado ? linkDoCarro(carro.slug) : null);
     try {
       await navigator.clipboard.writeText(texto);

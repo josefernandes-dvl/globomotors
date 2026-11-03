@@ -51,8 +51,6 @@ const CORES = {
   azul: [111, 168, 240],
   acento: [47, 111, 192],
   verde: [31, 168, 85],
-  ambar: [242, 176, 53],
-  textoAmbar: [26, 19, 0],
   vendido: [74, 85, 104],
   descricao: [200, 208, 220],
   branco: [255, 255, 255],
@@ -170,17 +168,16 @@ export function montarCatalogoPdf(
     doc.text(contato || textoPdf(loja.nome), MARGEM, altura - 20);
     doc.text(`Gerado em ${dataDeGeracao}`, largura - MARGEM, altura - 20, { align: "right" });
   };
-  const etiqueta = (x: number, y: number, texto: string, fundo: Cor, cor: Cor = CORES.branco) => {
+  const etiqueta = (x: number, y: number, texto: string, fundo: Cor) => {
     fonte(7, "bold");
     const larguraTexto = doc.getTextWidth(texto) + texto.length * 0.8;
     preencher(fundo);
     doc.roundedRect(x, y, larguraTexto + 12, 15, 3, 3, "F");
-    pintarTexto(cor);
+    pintarTexto(CORES.branco);
     doc.text(texto, x + 6, y + 10.4, { charSpace: 0.8 });
   };
   const etiquetaDoStatus = (carro: CarroPublico, x: number, y: number, comDestaque: boolean) => {
-    if (carro.status === "reservado") etiqueta(x, y, "RESERVADO", CORES.ambar, CORES.textoAmbar);
-    else if (carro.status === "vendido") etiqueta(x, y, "VENDIDO", CORES.vendido);
+    if (carro.status === "vendido") etiqueta(x, y, "VENDIDO", CORES.vendido);
     else if (comDestaque && carro.destaque) etiqueta(x, y, "DESTAQUE", CORES.acento);
   };
   const foto = (imagem: string | null, x: number, y: number, w: number, h: number) => {

@@ -119,16 +119,14 @@ describe("ordenarCarros", () => {
     ]);
   });
 
-  it("em destaques, põe destaque primeiro, reservado depois e vendido por último", () => {
+  it("em destaques, põe destaque primeiro e vendido por último, mesmo em destaque", () => {
     const vendido = carroPainel({ id: "vendido", status: "vendido", destaque: true });
-    const reservado = carroPainel({ id: "reservado", status: "reservado" });
     const destaque = carroPainel({ id: "destaque", destaque: true });
     const comum = carroPainel({ id: "comum" });
 
-    expect(ids(ordenarCarros([vendido, reservado, comum, destaque], "destaque", preco))).toEqual([
+    expect(ids(ordenarCarros([vendido, comum, destaque], "destaque", preco))).toEqual([
       "destaque",
       "comum",
-      "reservado",
       "vendido",
     ]);
   });

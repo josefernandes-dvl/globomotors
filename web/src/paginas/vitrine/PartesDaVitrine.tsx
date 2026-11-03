@@ -16,7 +16,6 @@ import {
 
 const CORES_DA_ETIQUETA: Record<StatusPublico, string> = {
   disponivel: "bg-acento text-white",
-  reservado: "bg-[#f2b035] text-[#1a1300]",
   vendido: "bg-[#4a5568] text-white",
 };
 

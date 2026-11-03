@@ -265,7 +265,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
   const dias = /^\d{4}-\d{2}-\d{2}$/.test(valores.dataEntrada)
     ? diasEntre(valores.dataEntrada, hojeEmSaoPaulo())
     : null;
-  const publicado = carro?.status === "disponivel" || carro?.status === "reservado";
+  const publicado = carro?.status === "disponivel";
   const ocupado = salvar.isPending || processando > 0;
 
   return (

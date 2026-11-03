@@ -115,6 +115,14 @@ async function criarCarro(status: StatusCarro = "disponivel", extra: Record<stri
   return resposta.corpo.carro;
 }
 
+async function alterarStatus(carroId: string, status: StatusCarro) {
+  const resposta = await api.requisitar("PATCH", `/dashboard/cars/${carroId}/status`, {
+    corpo: { status },
+    cookie,
+  });
+  expect(resposta.status).toBe(200);
+}
+
 async function enviarFoto(carroId: string, dados = fotoDeTeste("jpeg")) {
   const resposta = await api.requisitar<{ foto: FotoCarro }>(
     "POST",
@@ -282,7 +290,7 @@ describe("GET /api/showroom/cars", () => {
     esperarSemDadosPrivados(await vitrine("/cars"), dados);
   });
 
-  it("mostra disponíveis e reservados e esconde rascunhos e vendidos", async () => {
+  it("mostra só os disponíveis e esconde reservados, rascunhos e vendidos", async () => {
     const [disponivel, reservado, rascunho, vendido] = await Promise.all([
       criarCarro("disponivel"),
       criarCarro("reservado"),
@@ -292,19 +300,22 @@ describe("GET /api/showroom/cars", () => {
 
     const slugs = await slugsPublicos();
 
-    expect(slugs).toEqual(expect.arrayContaining([disponivel.slug, reservado.slug]));
+    expect(slugs).toContain(disponivel.slug);
+    expect(slugs).not.toContain(reservado.slug);
     expect(slugs).not.toContain(rascunho.slug);
     expect(slugs).not.toContain(vendido.slug);
   });
 
-  it("mostra os vendidos quando a loja escolhe mostrar, mas nunca os rascunhos", async () => {
+  it("mostra os vendidos quando a loja escolhe mostrar, mas nunca os reservados nem os rascunhos", async () => {
     await configurarLoja({ mostrarVendidos: true });
     const vendido = await criarCarro("vendido");
+    const reservado = await criarCarro("reservado");
     const rascunho = await criarCarro("rascunho");
 
     const resposta = await vitrine<{ carros: CarroPublico[] }>("/cars");
 
     const slugs = resposta.corpo.carros.map((carro) => carro.slug);
+    expect(slugs).not.toContain(reservado.slug);
     expect(slugs).not.toContain(rascunho.slug);
     expect(resposta.corpo.carros.find((carro) => carro.slug === vendido.slug)?.status).toBe(
       "vendido",
@@ -333,13 +344,23 @@ describe("GET /api/showroom/cars", () => {
 
   it("tira da vitrine o carro que volta para rascunho", async () => {
     const carro = await criarCarro();
-    await api.requisitar("PATCH", `/dashboard/cars/${carro.id}/status`, {
-      corpo: { status: "rascunho" },
-      cookie,
-    });
+    await alterarStatus(carro.id, "rascunho");
 
     expect(await slugsPublicos()).not.toContain(carro.slug);
     expect((await vitrine(`/cars/${carro.slug}`)).status).toBe(404);
+  });
+
+  it("tira da vitrine o carro reservado e o devolve, com o mesmo link, quando volta a disponível", async () => {
+    const carro = await criarCarro();
+    await alterarStatus(carro.id, "reservado");
+
+    expect(await slugsPublicos()).not.toContain(carro.slug);
+    expect((await vitrine(`/cars/${carro.slug}`)).status).toBe(404);
+
+    await alterarStatus(carro.id, "disponivel");
+
+    expect(await slugsPublicos()).toContain(carro.slug);
+    expect((await vitrine(`/cars/${carro.slug}`)).status).toBe(200);
   });
 
   it("devolve o mesmo conteúdo para quem tem sessão de vendedor", async () => {
@@ -368,33 +389,30 @@ describe("GET /api/showroom/cars/:slug", () => {
     esperarSemDadosPrivados(resposta, dados);
   });
 
-  it("devolve o carro reservado com o status", async () => {
-    const carro = await criarCarro("reservado");
+  it.each(["rascunho", "reservado", "vendido"] as const)(
+    "responde 404 para carro %s",
+    async (status) => {
+      const carro = await criarCarro(status);
 
-    const resposta = await vitrine<{ carro: CarroPublico }>(`/cars/${carro.slug}`);
+      const resposta = await vitrine(`/cars/${carro.slug}`);
 
-    expect(resposta.corpo.carro.status).toBe("reservado");
-  });
+      expect(resposta.status).toBe(404);
+      expect(resposta.corpo).toEqual({
+        erro: { codigo: "nao_encontrado", mensagem: "Carro não encontrado." },
+      });
+    },
+  );
 
-  it.each(["rascunho", "vendido"] as const)("responde 404 para carro %s", async (status) => {
-    const carro = await criarCarro(status);
-
-    const resposta = await vitrine(`/cars/${carro.slug}`);
-
-    expect(resposta.status).toBe(404);
-    expect(resposta.corpo).toEqual({
-      erro: { codigo: "nao_encontrado", mensagem: "Carro não encontrado." },
-    });
-  });
-
-  it("mostra o vendido quando a loja escolhe mostrar", async () => {
+  it("mostra o vendido quando a loja escolhe mostrar, mas continua escondendo o reservado", async () => {
     await configurarLoja({ mostrarVendidos: true });
-    const carro = await criarCarro("vendido");
+    const vendido = await criarCarro("vendido");
+    const reservado = await criarCarro("reservado");
 
-    const resposta = await vitrine<{ carro: CarroPublico }>(`/cars/${carro.slug}`);
+    const resposta = await vitrine<{ carro: CarroPublico }>(`/cars/${vendido.slug}`);
 
     expect(resposta.status).toBe(200);
     expect(resposta.corpo.carro.status).toBe("vendido");
+    expect((await vitrine(`/cars/${reservado.slug}`)).status).toBe(404);
   });
 
   it("não envia o preço quando a loja escolhe não mostrar", async () => {
@@ -451,7 +469,7 @@ describe("GET /api/showroom/photos/:id", () => {
     expect(baixada.dados.equals(dados)).toBe(true);
   });
 
-  it.each(["rascunho", "vendido"] as const)(
+  it.each(["rascunho", "reservado", "vendido"] as const)(
     "responde 404 para foto de carro %s",
     async (status) => {
       const carro = await criarCarro(status);
@@ -466,12 +484,15 @@ describe("GET /api/showroom/photos/:id", () => {
     },
   );
 
-  it("serve a foto do vendido quando a loja mostra vendidos", async () => {
+  it("serve a foto do vendido quando a loja mostra vendidos, mas não a do reservado", async () => {
     await configurarLoja({ mostrarVendidos: true });
-    const carro = await criarCarro("vendido");
-    const foto = await enviarFoto(carro.id);
+    const vendido = await criarCarro("vendido");
+    const reservado = await criarCarro("reservado");
+    const fotoDoVendido = await enviarFoto(vendido.id);
+    const fotoDoReservado = await enviarFoto(reservado.id);
 
-    expect((await api.baixar(`/showroom/photos/${foto.id}`)).status).toBe(200);
+    expect((await api.baixar(`/showroom/photos/${fotoDoVendido.id}`)).status).toBe(200);
+    expect((await vitrine(`/photos/${fotoDoReservado.id}`)).status).toBe(404);
   });
 
   it.each([
