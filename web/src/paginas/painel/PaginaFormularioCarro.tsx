@@ -7,16 +7,23 @@ import {
   errosDeCampo,
   esquemaCarro,
   esquemaOpcionais,
+  esquemaPedidoIa,
   hojeEmSaoPaulo,
   MAX_FOTOS_POR_CARRO,
   ROTULOS_STATUS_CARRO,
   STATUS_CARRO,
   TIPOS_DE_FOTO,
+  type CarroExtraido,
   type CarroPainel,
   type CarroValidado,
   type FotoCarro,
 } from "@globomotors/shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+} from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { CampoAreaTexto, CampoMarcar, CampoSelecao, CampoTexto } from "../../componentes/Campo.tsx";
@@ -27,6 +34,7 @@ import { formatarDinheiro, plural } from "../../lib/formatacao.ts";
 import {
   lerDinheiro,
   paraDadosCarro,
+  valoresDaIa,
   valoresDoCarro,
   type ValoresCarro,
 } from "../../lib/formularioCarro.ts";
@@ -64,6 +72,10 @@ const SECAO = `${CAIXA} border-linha bg-painel`;
 const SECAO_PRIVADA = `${CAIXA} border-dashed border-[#d9c38f] bg-[#fffaf0]`;
 const TITULO_SECAO = "mb-3 text-base font-extrabold font-stretch-[112%]";
 const GRADE = "grid grid-cols-2 gap-3 sm:grid-cols-6";
+const ETIQUETA =
+  "flex max-w-full items-center gap-1 rounded-2xl border border-linha bg-papel py-1 pr-1 pl-3 text-[13px] font-semibold";
+const BOTAO_TIRAR =
+  "grid size-6 flex-none cursor-pointer place-items-center rounded-full text-suave transition hover:bg-black/5 hover:text-perigo";
 
 async function salvarCarro({ id, dados, fotos, removidas }: Salvamento) {
   const { carro } = id
@@ -163,6 +175,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
   );
   const [removidas, setRemovidas] = useState<string[]>([]);
   const [processando, setProcessando] = useState(0);
+  const lerComIa = useMutation({ mutationFn: lerCarroComIa });
   const urlsCriadas = useRef(new Set<string>());
 
   useEffect(() => {
@@ -266,7 +279,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
     ? diasEntre(valores.dataEntrada, hojeEmSaoPaulo())
     : null;
   const publicado = carro?.status === "disponivel";
-  const ocupado = salvar.isPending || processando > 0;
+  const ocupado = salvar.isPending || processando > 0 || lerComIa.isPending;
 
   return (
     <PaginaDoPainel
@@ -283,6 +296,14 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
     >
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <form noValidate onSubmit={aoEnviar} className="flex flex-col gap-4">
+          <PreenchimentoComIa
+            ler={lerComIa}
+            onPreencher={(lido) => {
+              setValores((atuais) => valoresDaIa(atuais, lido));
+              setErros({});
+            }}
+          />
+
           <GerenciadorDeFotos
             fotos={fotos}
             processando={processando}
@@ -555,16 +576,13 @@ function CampoDeAdicionais({ itens, erro, onMudar }: PropsAdicionais) {
         {itens.length > 0 && (
           <ul className="flex flex-wrap gap-1.5">
             {itens.map((item) => (
-              <li
-                key={item}
-                className="flex max-w-full items-center gap-1 rounded-2xl border border-linha bg-papel py-1 pr-1 pl-3 text-[13px] font-semibold"
-              >
+              <li key={item} className={ETIQUETA}>
                 <span className="min-w-0 wrap-break-word">{item}</span>
                 <button
                   type="button"
                   aria-label={`Remover ${item}`}
                   onClick={() => remover(item)}
-                  className="grid size-6 flex-none cursor-pointer place-items-center rounded-full text-suave transition hover:bg-black/5 hover:text-perigo"
+                  className={BOTAO_TIRAR}
                 >
                   <Icone nome="fechar" className="size-3.5" />
                 </button>
@@ -609,6 +627,142 @@ function CampoDeAdicionais({ itens, erro, onMudar }: PropsAdicionais) {
         )}
       </div>
     </fieldset>
+  );
+}
+
+interface PedidoComIa {
+  texto: string;
+  imagens: File[];
+}
+
+async function lerCarroComIa({ texto, imagens }: PedidoComIa) {
+  const formulario = new FormData();
+  formulario.set("texto", texto);
+  for (const imagem of imagens) {
+    let reduzida: Blob;
+    try {
+      reduzida = await comprimirFoto(imagem);
+    } catch (erro) {
+      throw new Error(`${imagem.name}: ${mensagemDeErro(erro)}`, { cause: erro });
+    }
+    formulario.append("imagens", reduzida, imagem.name);
+  }
+  return api.post<{ carro: CarroExtraido }>("/dashboard/ai/extract-car", formulario);
+}
+
+interface PropsPreenchimento {
+  ler: UseMutationResult<{ carro: CarroExtraido }, Error, PedidoComIa>;
+  onPreencher: (carro: CarroExtraido) => void;
+}
+
+function PreenchimentoComIa({ ler, onPreencher }: PropsPreenchimento) {
+  const avisar = useAvisos();
+  const [texto, setTexto] = useState("");
+  const [imagens, setImagens] = useState<File[]>([]);
+  const [erro, setErro] = useState<string | null>(null);
+
+  function preencher() {
+    const resultado = esquemaPedidoIa.safeParse({ texto, imagens: imagens.length });
+    if (!resultado.success) {
+      setErro(errosDeCampo(resultado.error)[0]?.mensagem ?? null);
+      return;
+    }
+    setErro(null);
+    ler.mutate(
+      { texto: resultado.data.texto, imagens },
+      {
+        onSuccess: ({ carro }) => {
+          const quantidade = Object.keys(carro).length;
+          if (quantidade === 0) {
+            setErro(
+              "A IA não achou dados do carro. Escreva mais detalhes ou escolha outra imagem.",
+            );
+            return;
+          }
+          onPreencher(carro);
+          avisar(
+            `A IA preencheu ${plural(quantidade, "campo", "campos")}. Confira antes de salvar.`,
+          );
+        },
+        onError: (falha) => {
+          setErro(
+            falha instanceof ErroApi && falha.status === 413
+              ? "As imagens ficaram grandes demais. Escolha menos imagens."
+              : mensagemDeErro(falha),
+          );
+        },
+      },
+    );
+  }
+
+  return (
+    <section className={SECAO}>
+      <h2 className="text-base font-extrabold font-stretch-[112%]">Preencher com IA</h2>
+      <p className="mt-0.5 mb-3 text-[13px] text-suave">
+        Cole o anúncio, a conversa ou as anotações do carro, ou escolha fotos dele e do documento. A
+        IA escreve nos campos o que conseguir ler.
+      </p>
+      <CampoAreaTexto
+        rotulo="Texto sobre o carro"
+        placeholder="Onix LTZ 1.0 Turbo 2020/2021, 42 mil km, automático, R$ 89.900"
+        value={texto}
+        onChange={(evento) => {
+          setTexto(evento.target.value);
+          setErro(null);
+        }}
+      />
+      {imagens.length > 0 && (
+        <ul aria-label="Imagens para a IA" className="mt-3 flex flex-wrap gap-1.5">
+          {imagens.map((imagem, indice) => (
+            <li key={`${indice}:${imagem.name}`} className={ETIQUETA}>
+              <span className="min-w-0 truncate">{imagem.name}</span>
+              <button
+                type="button"
+                aria-label={`Remover ${imagem.name}`}
+                onClick={() => {
+                  setImagens((atuais) => atuais.filter((_, posicao) => posicao !== indice));
+                  setErro(null);
+                }}
+                className={BOTAO_TIRAR}
+              >
+                <Icone nome="fechar" className="size-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <label className="botao has-focus-visible:outline-2 has-focus-visible:outline-acento">
+          <Icone nome="foto" />
+          Escolher imagens
+          <input
+            type="file"
+            multiple
+            accept={TIPOS_DE_FOTO.join(",")}
+            onChange={(evento) => {
+              const arquivos = [...(evento.target.files ?? [])];
+              evento.target.value = "";
+              setImagens((atuais) => [...atuais, ...arquivos]);
+              setErro(null);
+            }}
+            className="sr-only"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={ler.isPending}
+          onClick={preencher}
+          className="botao botao-primario"
+        >
+          {ler.isPending ? "Lendo…" : "Preencher com IA"}
+        </button>
+      </div>
+      {erro && (
+        <p role="alert" className="mt-2 text-sm font-medium text-perigo">
+          {erro}
+        </p>
+      )}
+    </section>
   );
 }
 

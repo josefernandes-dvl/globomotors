@@ -55,7 +55,7 @@ describe("montarSaidaVercel", () => {
     );
   });
 
-  it("configura a função da API em Node 24, na região de São Paulo", async () => {
+  it("configura a função da API em Node 24, na região de São Paulo e com até 60 s para a leitura da IA", async () => {
     const config: unknown = JSON.parse(
       await readFile(join(saida, "functions/api.func/.vc-config.json"), "utf8"),
     );
@@ -65,6 +65,7 @@ describe("montarSaidaVercel", () => {
       handler: "index.mjs",
       launcherType: "Nodejs",
       regions: ["gru1"],
+      maxDuration: 60,
     });
   });
 

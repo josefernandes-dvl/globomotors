@@ -59,7 +59,13 @@ export async function montarSaidaVercel({
   await writeFile(
     join(pastaFuncao, ".vc-config.json"),
     JSON.stringify(
-      { runtime: "nodejs24.x", handler: "index.mjs", launcherType: "Nodejs", regions: ["gru1"] },
+      {
+        runtime: "nodejs24.x",
+        handler: "index.mjs",
+        launcherType: "Nodejs",
+        regions: ["gru1"],
+        maxDuration: 60,
+      },
       null,
       2,
     ),

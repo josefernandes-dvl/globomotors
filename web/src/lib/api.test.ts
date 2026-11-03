@@ -43,6 +43,21 @@ describe("api", () => {
     });
   });
 
+  it("envia formulário com arquivos sem fixar o tipo, para o navegador pôr o boundary", async () => {
+    const fetchFalso = responderCom(Response.json({ carro: {} }));
+    const formulario = new FormData();
+    formulario.set("texto", "Onix 2021");
+    formulario.append("imagens", new Blob(["jpeg"], { type: "image/jpeg" }), "onix.jpg");
+
+    await api.post("/dashboard/ai/extract-car", formulario);
+
+    expect(fetchFalso).toHaveBeenCalledWith("/api/dashboard/ai/extract-car", {
+      method: "POST",
+      headers: undefined,
+      body: formulario,
+    });
+  });
+
   it("devolve undefined quando a resposta é 204", async () => {
     responderCom(new Response(null, { status: 204 }));
 

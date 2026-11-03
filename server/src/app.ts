@@ -1,6 +1,7 @@
 import express from "express";
 import helmet, { type HelmetOptions } from "helmet";
 import type { Logger } from "pino";
+import type { Ia } from "./ia.ts";
 import { rotaNaoEncontrada, tratarErros } from "./middlewares/erros.ts";
 import { logDeRequisicoes } from "./middlewares/log.ts";
 import { exigirMesmaOrigem } from "./middlewares/origem.ts";
@@ -16,6 +17,7 @@ interface OpcoesApp {
   pastaWeb?: string | undefined;
   cookieSeguro?: boolean;
   confiarEmProxy?: number;
+  ia?: Ia | null;
 }
 
 export const opcoesHelmet: HelmetOptions = {
@@ -28,6 +30,7 @@ export function criarApp({
   pastaWeb,
   cookieSeguro = false,
   confiarEmProxy = 0,
+  ia = null,
 }: OpcoesApp) {
   const app = express();
   app.set("trust proxy", confiarEmProxy);
@@ -44,7 +47,7 @@ export function criarApp({
   app.use("/api/health", rotasSaude(repositorios));
   app.use("/api/auth", rotasAuth(repositorios, { cookieSeguro }));
   app.use("/api/showroom", rotasVitrine(repositorios));
-  app.use("/api/dashboard", rotasPainel(repositorios));
+  app.use("/api/dashboard", rotasPainel(repositorios, ia));
   app.use("/api", rotaNaoEncontrada);
 
   if (pastaWeb) {

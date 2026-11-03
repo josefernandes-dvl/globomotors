@@ -1,4 +1,4 @@
-import type { StatusCarro } from "@globomotors/shared";
+import type { CodigoErro, StatusCarro } from "@globomotors/shared";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { userEvent, type UserEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -120,7 +120,7 @@ describe("PaginaFormularioCarro", () => {
       await waitFor(() => expect(document.title).toBe("Novo carro · Painel"));
       expect(
         screen.getAllByRole("heading", { level: 2 }).map((titulo) => titulo.textContent),
-      ).toEqual(["Fotos", "Veículo", "Anúncio", "Só para você"]);
+      ).toEqual(["Preencher com IA", "Fotos", "Veículo", "Anúncio", "Só para você"]);
       const privada = screen
         .getByRole("heading", { level: 2, name: "Só para você" })
         .closest("section");
@@ -1030,6 +1030,253 @@ describe("PaginaFormularioCarro", () => {
       expect(await screen.findByText("Alterações salvas.")).toBeInTheDocument();
       expect(api.corpos("PUT /api/dashboard/cars/c1")).toEqual([
         expect.objectContaining({ opcionais: [] }),
+      ]);
+    });
+  });
+
+  describe("preencher com IA", () => {
+    function pedirLeitura(usuario: UserEvent) {
+      return usuario.click(screen.getByRole("button", { name: "Preencher com IA" }));
+    }
+
+    function entradaDaIa() {
+      return screen.getByLabelText("Escolher imagens");
+    }
+
+    function imagensDaIa() {
+      return within(screen.getByRole("list", { name: "Imagens para a IA" }))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent);
+    }
+
+    it("escreve nos campos o que a IA leu do texto e das imagens", async () => {
+      const usuario = userEvent.setup();
+      const api = simularFormulario({
+        "POST /api/dashboard/ai/extract-car": {
+          carro: {
+            marca: "Chevrolet",
+            modelo: "Onix",
+            anoFabricacao: 2020,
+            anoModelo: 2021,
+            km: 42_000,
+            cambio: "Automático",
+            precoVenda: 8_990_000,
+            precoCompra: 7_500_000,
+            vendedorTelefone: "62988887777",
+            opcionais: ["Ar-condicionado", "Câmera de ré"],
+          },
+        },
+      });
+      renderizarRota("/dashboard/cars/new");
+      await screen.findByLabelText("Marca *");
+      expect(screen.queryByRole("list", { name: "Imagens para a IA" })).not.toBeInTheDocument();
+      await usuario.click(screen.getByRole("button", { name: "Adicionar ao catálogo" }));
+      expect(screen.getByLabelText("Marca *")).toHaveAttribute("aria-invalid", "true");
+      const documento = foto("documento.png", "image/png");
+
+      await preencher(usuario, {
+        "Texto sobre o carro": "  Onix LTZ 2020/2021, 42 mil km, R$ 89.900  ",
+      });
+      await usuario.upload(entradaDaIa(), [documento, foto("painel.jpg")]);
+      expect(imagensDaIa()).toEqual(["documento.png", "painel.jpg"]);
+      await pedirLeitura(usuario);
+
+      expect(
+        await screen.findByText("A IA preencheu 10 campos. Confira antes de salvar."),
+      ).toHaveAttribute("role", "status");
+      expect(formulario()).toHaveFormValues({
+        marca: "Chevrolet",
+        modelo: "Onix",
+        versao: "",
+        anoFabricacao: "2020",
+        anoModelo: "2021",
+        km: "42.000",
+        cambio: "Automático",
+        precoVenda: "89.900",
+        precoCompra: "75.000",
+        vendedorTelefone: "(62) 98888-7777",
+        status: "rascunho",
+        destaque: false,
+        dataEntrada: "2026-10-30",
+      });
+      expect(itensAdicionais()).toEqual(["Ar-condicionado", "Câmera de ré"]);
+      expect(screen.getByLabelText("Marca *")).not.toHaveAttribute("aria-invalid");
+      expect(valorDe("Margem estimada:")).toHaveTextContent("R$ 14.900");
+      expect(fotosNaTela()).toEqual([]);
+      const [pedido] = api.corpos("POST /api/dashboard/ai/extract-car") as FormData[];
+      expect(pedido?.get("texto")).toBe("Onix LTZ 2020/2021, 42 mil km, R$ 89.900");
+      expect((pedido?.getAll("imagens") as File[]).map(({ name, type }) => [name, type])).toEqual([
+        ["documento.png", "image/jpeg"],
+        ["painel.jpg", "image/jpeg"],
+      ]);
+      expect(vi.mocked(comprimirFoto)).toHaveBeenCalledWith(documento);
+    });
+
+    it("confere o pedido antes de chamar a IA e deixa tirar imagens", async () => {
+      const usuario = userEvent.setup();
+      const api = simularFormulario();
+      renderizarRota("/dashboard/cars/new");
+      await screen.findByLabelText("Marca *");
+
+      await pedirLeitura(usuario);
+      expect(screen.getByRole("alert")).toHaveTextContent("Cole um texto ou escolha uma imagem.");
+
+      await preencher(usuario, { "Texto sobre o carro": "a".repeat(6001) });
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      await pedirLeitura(usuario);
+      expect(screen.getByRole("alert")).toHaveTextContent("Use no máximo 6000 caracteres.");
+
+      await preencher(usuario, { "Texto sobre o carro": "" });
+      await usuario.upload(entradaDaIa(), variasFotos("doc", 3));
+      await usuario.upload(entradaDaIa(), variasFotos("placa", 2));
+      expect(imagensDaIa()).toEqual([
+        "doc1.jpg",
+        "doc2.jpg",
+        "doc3.jpg",
+        "placa1.jpg",
+        "placa2.jpg",
+      ]);
+      await pedirLeitura(usuario);
+      expect(screen.getByRole("alert")).toHaveTextContent("Escolha no máximo 4 imagens.");
+
+      await usuario.click(screen.getByRole("button", { name: "Remover doc2.jpg" }));
+
+      expect(imagensDaIa()).toEqual(["doc1.jpg", "doc3.jpg", "placa1.jpg", "placa2.jpg"]);
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(alteracoes(api.chaves())).toEqual([]);
+      expect(vi.mocked(comprimirFoto)).not.toHaveBeenCalled();
+    });
+
+    it.each<[number, CodigoErro, string, string]>([
+      [
+        429,
+        "ia_indisponivel",
+        "O limite gratuito da IA acabou por agora. Tente de novo mais tarde.",
+        "O limite gratuito da IA acabou por agora. Tente de novo mais tarde.",
+      ],
+      [
+        503,
+        "ia_indisponivel",
+        "A leitura com IA ainda não foi configurada no servidor.",
+        "A leitura com IA ainda não foi configurada no servidor.",
+      ],
+      [
+        413,
+        "requisicao_invalida",
+        "Requisição inválida.",
+        "As imagens ficaram grandes demais. Escolha menos imagens.",
+      ],
+    ])(
+      "mostra o erro %i da leitura sem mexer no formulário",
+      async (status, codigo, mensagem, esperada) => {
+        const usuario = userEvent.setup();
+        simularFormulario({
+          "POST /api/dashboard/ai/extract-car": respostaDeErro(status, codigo, mensagem),
+        });
+        renderizarRota("/dashboard/cars/new");
+        await screen.findByLabelText("Marca *");
+
+        await preencher(usuario, { "Texto sobre o carro": "Onix 2021" });
+        await pedirLeitura(usuario);
+
+        expect(await screen.findByRole("alert")).toHaveTextContent(esperada);
+        expect(screen.getByLabelText("Marca *")).toHaveValue("");
+        expect(screen.getByLabelText("Texto sobre o carro")).toHaveValue("Onix 2021");
+        expect(screen.getByRole("button", { name: "Preencher com IA" })).toBeEnabled();
+      },
+    );
+
+    it("avisa quando a IA não acha nada e quando uma imagem não pode ser lida", async () => {
+      const usuario = userEvent.setup();
+      const api = simularFormulario({ "POST /api/dashboard/ai/extract-car": { carro: {} } });
+      renderizarRota("/dashboard/cars/new");
+      await screen.findByLabelText("Marca *");
+
+      await preencher(usuario, { "Texto sobre o carro": "Bom dia" });
+      await pedirLeitura(usuario);
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "A IA não achou dados do carro. Escreva mais detalhes ou escolha outra imagem.",
+      );
+      expect(screen.queryByText(/^A IA preencheu/)).not.toBeInTheDocument();
+
+      vi.mocked(comprimirFoto).mockRejectedValue(
+        new Error("Não foi possível ler esta imagem. Use JPG, PNG ou WebP."),
+      );
+      await usuario.upload(entradaDaIa(), foto("documento.jpg"));
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      await pedirLeitura(usuario);
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "documento.jpg: Não foi possível ler esta imagem. Use JPG, PNG ou WebP.",
+      );
+      expect(api.corpos("POST /api/dashboard/ai/extract-car")).toHaveLength(1);
+    });
+
+    it("bloqueia o envio do carro enquanto a IA lê", async () => {
+      const usuario = userEvent.setup();
+      let responder: (valor: unknown) => void = () => undefined;
+      simularFormulario({
+        "POST /api/dashboard/ai/extract-car": () =>
+          new Promise((resolver) => {
+            responder = resolver;
+          }),
+      });
+      renderizarRota("/dashboard/cars/new");
+      await screen.findByLabelText("Marca *");
+
+      await preencher(usuario, { "Texto sobre o carro": "Fiat Pulse 2023" });
+      await pedirLeitura(usuario);
+
+      expect(await screen.findByRole("button", { name: "Lendo…" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Adicionar ao catálogo" })).toBeDisabled();
+
+      responder({ carro: { marca: "Fiat", modelo: "Pulse" } });
+
+      expect(
+        await screen.findByText("A IA preencheu 2 campos. Confira antes de salvar."),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText("Modelo *")).toHaveValue("Pulse");
+      expect(screen.getByRole("button", { name: "Preencher com IA" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Adicionar ao catálogo" })).toBeEnabled();
+    });
+
+    it("ao editar, troca só os campos lidos, junta os adicionais e salva", async () => {
+      const usuario = userEvent.setup();
+      const api = simularFormulario({
+        "POST /api/dashboard/ai/extract-car": {
+          carro: { km: 51_000, precoVenda: 9_250_050, opcionais: ["multimídia", "Teto solar"] },
+        },
+        "PUT /api/dashboard/cars/c1": { carro: ONIX },
+      });
+      renderizarRota("/dashboard/cars/c1");
+      await screen.findByLabelText("Marca *");
+
+      await preencher(usuario, { "Texto sobre o carro": "Agora com 51 mil km e teto solar" });
+      await pedirLeitura(usuario);
+
+      expect(
+        await screen.findByText("A IA preencheu 3 campos. Confira antes de salvar."),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText("Quilometragem")).toHaveValue("51.000");
+      expect(screen.getByLabelText("Preço de venda (R$)")).toHaveValue("92.500,50");
+      expect(itensAdicionais()).toEqual(["Ar-condicionado", "Multimídia", "Teto solar"]);
+
+      await usuario.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+      expect(await screen.findByText("Alterações salvas.")).toBeInTheDocument();
+      expect(api.corpos("PUT /api/dashboard/cars/c1")).toEqual([
+        expect.objectContaining({
+          marca: "Chevrolet",
+          modelo: "Onix",
+          km: 51_000,
+          precoVenda: 9_250_050,
+          opcionais: ["Ar-condicionado", "Multimídia", "Teto solar"],
+          status: "disponivel",
+          precoCompra: 7_500_000,
+          placa: "ABC1D23",
+          vendedorTelefone: "62988887777",
+        }),
       ]);
     });
   });

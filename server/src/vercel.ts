@@ -2,6 +2,7 @@ import { attachDatabasePool } from "@vercel/functions/db-connections";
 import { criarApp } from "./app.ts";
 import { lerConfig } from "./config.ts";
 import { criarBanco } from "./db/banco.ts";
+import { criarIa } from "./ia.ts";
 import { criarLogger } from "./logger.ts";
 import { criarRepositorios } from "./repositorios/index.ts";
 
@@ -16,4 +17,5 @@ export default criarApp({
   logger,
   cookieSeguro: true,
   confiarEmProxy: 1,
+  ia: criarIa(config),
 });

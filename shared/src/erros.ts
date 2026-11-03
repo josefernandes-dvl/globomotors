@@ -10,6 +10,7 @@ export const CODIGOS_ERRO = {
   NAO_ENCONTRADO: "nao_encontrado",
   CONFLITO: "conflito",
   ARQUIVO_INVALIDO: "arquivo_invalido",
+  IA_INDISPONIVEL: "ia_indisponivel",
   ERRO_INTERNO: "erro_interno",
 } as const;
 

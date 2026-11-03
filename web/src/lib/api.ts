@@ -16,6 +16,7 @@ export class ErroApi extends Error {
 
 function prepararCorpo(corpo: unknown) {
   if (corpo === undefined) return { headers: undefined, body: undefined };
+  if (corpo instanceof FormData) return { headers: undefined, body: corpo };
   if (corpo instanceof Blob) return { headers: { "Content-Type": corpo.type }, body: corpo };
   return { headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) };
 }

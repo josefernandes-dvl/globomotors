@@ -31,6 +31,7 @@ const ROTAS_DO_PAINEL = [
   ["DELETE", `/dashboard/interests/${ID}`],
   ["GET", "/dashboard/store"],
   ["PUT", "/dashboard/store"],
+  ["POST", "/dashboard/ai/extract-car"],
   ["GET", "/dashboard/rota-que-nao-existe"],
 ] as const;
 

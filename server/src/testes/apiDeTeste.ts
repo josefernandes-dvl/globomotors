@@ -1,6 +1,7 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { calcularDigitoRenavam } from "@globomotors/shared";
 import { criarApp } from "../app.ts";
+import type { Ia } from "../ia.ts";
 import { criarLogger } from "../logger.ts";
 import { criarRepositorios } from "../repositorios/index.ts";
 import { gerarHashSenha } from "../senhas.ts";
@@ -15,11 +16,11 @@ interface OpcoesRequisicao {
 
 export const SENHA_DE_TESTE = "teste123";
 
-export async function prepararApiDeTeste() {
+export async function prepararApiDeTeste({ ia }: { ia?: Ia } = {}) {
   const banco = await criarBancoDeTeste();
   const repositorios = criarRepositorios(banco.db);
   const logger = criarLogger({ NODE_ENV: "test" });
-  const servidor = await iniciarServidorDeTeste(criarApp({ repositorios, logger }));
+  const servidor = await iniciarServidorDeTeste(criarApp({ repositorios, logger, ia: ia ?? null }));
 
   async function enviar(metodo: string, caminho: string, opcoes: OpcoesRequisicao = {}) {
     const { corpo, cookie, tipo } = opcoes;

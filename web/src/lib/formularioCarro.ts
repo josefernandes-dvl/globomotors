@@ -1,5 +1,8 @@
 import {
+  CAMPOS_DA_IA,
+  esquemaOpcionais,
   hojeEmSaoPaulo,
+  type CarroExtraido,
   type CarroPainel,
   type DadosCarro,
   type StatusCarro,
@@ -60,7 +63,7 @@ function texto(valor: string | number | null) {
   return valor === null ? "" : String(valor);
 }
 
-export function valoresDoCarro(carro?: CarroPainel): ValoresCarro {
+export function valoresDoCarro(carro?: Partial<CarroPainel>): ValoresCarro {
   return {
     marca: carro?.marca ?? "",
     modelo: carro?.modelo ?? "",
@@ -92,6 +95,21 @@ export function valoresDoCarro(carro?: CarroPainel): ValoresCarro {
     vendedorNome: texto(carro?.vendedorNome ?? null),
     vendedorTelefone: formatarTelefone(carro?.vendedorTelefone ?? ""),
     observacoesInternas: texto(carro?.observacoesInternas ?? null),
+  };
+}
+
+export function valoresDaIa(atuais: ValoresCarro, carro: CarroExtraido): ValoresCarro {
+  const lidos = valoresDoCarro(carro);
+  const opcionais = esquemaOpcionais.safeParse([...atuais.opcionais, ...(carro.opcionais ?? [])]);
+  return {
+    ...atuais,
+    ...Object.fromEntries(
+      CAMPOS_DA_IA.filter((campo) => carro[campo] !== undefined).map((campo) => [
+        campo,
+        lidos[campo],
+      ]),
+    ),
+    opcionais: opcionais.success ? opcionais.data : atuais.opcionais,
   };
 }
 

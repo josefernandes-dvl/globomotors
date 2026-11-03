@@ -1,7 +1,13 @@
 import { esquemaCarro } from "@globomotors/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { carroPainel } from "../testes/dados.ts";
-import { lerDinheiro, lerInteiro, paraDadosCarro, valoresDoCarro } from "./formularioCarro.ts";
+import {
+  lerDinheiro,
+  lerInteiro,
+  paraDadosCarro,
+  valoresDaIa,
+  valoresDoCarro,
+} from "./formularioCarro.ts";
 
 describe("lerDinheiro", () => {
   it("lê reais com milhar e centavos no formato brasileiro", () => {
@@ -107,6 +113,53 @@ describe("valoresDoCarro", () => {
       vendedorTelefone: "(62) 98888-7777",
       observacoesInternas: "Pneus novos",
     });
+  });
+});
+
+describe("valoresDaIa", () => {
+  it("troca só os campos que a IA leu, no formato do formulário, e mantém o resto", () => {
+    const atuais = { ...valoresDoCarro(carroPainel()), destaque: true };
+
+    const valores = valoresDaIa(atuais, {
+      modelo: "Onix Plus",
+      km: 51000,
+      precoVenda: 9_250_050,
+      precoCompra: 7_800_000,
+      vendedorTelefone: "11987654321",
+      dataEntrada: "2026-10-20",
+      placa: "BRA2E19",
+    });
+
+    expect(valores).toEqual({
+      ...atuais,
+      modelo: "Onix Plus",
+      km: "51.000",
+      precoVenda: "92.500,50",
+      precoCompra: "78.000",
+      vendedorTelefone: "(11) 98765-4321",
+      dataEntrada: "2026-10-20",
+      placa: "BRA2E19",
+    });
+    expect(valores.status).toBe("disponivel");
+    expect(valores.destaque).toBe(true);
+  });
+
+  it("junta os adicionais lidos aos que já estavam, sem repetir", () => {
+    const atuais = valoresDoCarro(carroPainel());
+
+    expect(
+      valoresDaIa(atuais, { opcionais: ["ar-condicionado", "Câmera de ré"] }).opcionais,
+    ).toEqual(["Ar-condicionado", "Multimídia", "Câmera de ré"]);
+    expect(valoresDaIa(atuais, { marca: "Fiat" }).opcionais).toEqual(atuais.opcionais);
+  });
+
+  it("mantém os adicionais da tela quando a soma passa do limite", () => {
+    const atuais = {
+      ...valoresDoCarro(),
+      opcionais: Array.from({ length: 40 }, (_, indice) => `Item ${indice + 1}`),
+    };
+
+    expect(valoresDaIa(atuais, { opcionais: ["Teto solar"] }).opcionais).toEqual(atuais.opcionais);
   });
 });
 

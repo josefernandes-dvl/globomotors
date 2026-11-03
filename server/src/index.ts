@@ -3,6 +3,7 @@ import { criarApp } from "./app.ts";
 import { lerConfig } from "./config.ts";
 import { criarBanco } from "./db/banco.ts";
 import { migrar } from "./db/migrar.ts";
+import { criarIa } from "./ia.ts";
 import { criarLogger } from "./logger.ts";
 import { criarRepositorios } from "./repositorios/index.ts";
 
@@ -29,6 +30,7 @@ const app = criarApp({
       : undefined,
   cookieSeguro: config.NODE_ENV === "production",
   confiarEmProxy: config.TRUST_PROXY,
+  ia: criarIa(config),
 });
 
 const servidor = app.listen(config.PORT, (erro) => {

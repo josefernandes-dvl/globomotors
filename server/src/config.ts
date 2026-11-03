@@ -6,6 +6,15 @@ const esquemaConfig = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).optional(),
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  AI_API_KEY: z
+    .string()
+    .trim()
+    .transform((chave) => chave || undefined)
+    .optional(),
+  AI_MODEL: z.string().trim().min(1).default("gemini-3.5-flash-lite"),
+  AI_BASE_URL: z
+    .url({ protocol: /^https?$/ })
+    .default("https://generativelanguage.googleapis.com/v1beta/openai"),
 });
 
 export type Config = z.infer<typeof esquemaConfig>;
