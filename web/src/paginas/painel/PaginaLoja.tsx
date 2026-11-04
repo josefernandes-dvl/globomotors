@@ -153,7 +153,7 @@ function FormularioLoja({ loja }: { loja: Loja }) {
             Desmarcado, o catálogo mostra “Consulte” e o preço não sai do servidor.
           </p>
           <CampoMarcar
-            rotulo="Mostrar carros vendidos no catálogo"
+            rotulo="Mostrar veículos vendidos no catálogo"
             {...marcar("mostrarVendidos")}
           />
         </fieldset>
@@ -167,7 +167,7 @@ function FormularioLoja({ loja }: { loja: Loja }) {
       <aside className={`${SECAO} flex flex-col gap-3`}>
         <h2 className="text-base font-extrabold font-stretch-[112%]">Link do catálogo</h2>
         <p className="text-sm text-suave">
-          É este o endereço que você divulga. Quem abre vê só o catálogo: carros publicados, sem
+          É este o endereço que você divulga. Quem abre vê só o catálogo: veículos publicados, sem
           acesso ao painel.
         </p>
         <a

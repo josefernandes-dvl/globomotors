@@ -3,6 +3,7 @@ import {
   corpoInvalido,
   esquemaCentavos,
   esquemaTelefone,
+  listaDeTextos,
   opcional,
   textoObrigatorio,
   textoOpcional,
@@ -55,7 +56,7 @@ export type TipoDeFoto = (typeof TIPOS_DE_FOTO)[number];
 
 const ANO_MINIMO = 1900;
 
-const esquemaAno = z
+export const esquemaAno = z
   .int({ error: "Informe um ano válido." })
   .min(ANO_MINIMO, { error: `Informe um ano a partir de ${ANO_MINIMO}.`, abort: true })
   .refine((ano) => ano <= new Date().getFullYear() + 1, {
@@ -96,22 +97,7 @@ const esquemaRenavam = z
   .refine(renavamValido, "Renavam inválido: confira os dígitos.")
   .transform((renavam) => renavam.padStart(11, "0"));
 
-export const esquemaOpcionais = z
-  .array(
-    z
-      .string({ error: "Adicional inválido." })
-      .trim()
-      .min(1, "Adicional vazio.")
-      .max(60, "Cada adicional pode ter no máximo 60 caracteres."),
-    { error: "Lista de adicionais inválida." },
-  )
-  .max(40, "Informe no máximo 40 adicionais.")
-  .transform((lista) =>
-    lista.filter(
-      (item, indice) =>
-        lista.findIndex((outro) => outro.toLowerCase() === item.toLowerCase()) === indice,
-    ),
-  );
+export const esquemaOpcionais = listaDeTextos("Adicional", "adicionais", 60, 40);
 
 const esquemaDataEntrada = z.preprocess(
   (valor) => (valor === "" || valor === null ? undefined : valor),
@@ -261,8 +247,14 @@ export interface CarroPainel extends CamposPublicosCarro {
   observacoesInternas: string | null;
   interessados: number;
   vendidoEm: string | null;
+  publicadoEm: string | null;
   criadoEm: string;
   atualizadoEm: string;
+}
+
+export interface CarroSalvo {
+  carro: CarroPainel;
+  possiveisInteressados: number;
 }
 
 interface CustosDoCarro {

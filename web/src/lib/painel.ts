@@ -1,4 +1,4 @@
-import type { CarroPainel, Cliente, Interesse, Loja } from "@globomotors/shared";
+import type { CarroPainel, Cliente, ClienteComDesejos, Interesse, Loja } from "@globomotors/shared";
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "./api.ts";
 
@@ -54,4 +54,10 @@ export function consultaInteresses(filtro: FiltroInteresses = {}) {
 export const consultaLojaPainel = queryOptions({
   queryKey: ["painel", "loja"],
   queryFn: async () => (await api.get<{ loja: Loja }>("/dashboard/store")).loja,
+});
+
+export const consultaDesejos = queryOptions({
+  queryKey: ["painel", "desejos"],
+  queryFn: async () =>
+    (await api.get<{ clientes: ClienteComDesejos[] }>("/dashboard/wishes")).clientes,
 });

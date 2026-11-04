@@ -7,6 +7,7 @@ import {
   textoObrigatorio,
   textoOpcional,
 } from "./campos.ts";
+import { esquemaDesejosDoCliente } from "./desejos.ts";
 
 export const ORIGENS_CLIENTE = [
   "vitrine",
@@ -62,6 +63,7 @@ export const esquemaCliente = z.object(
     ),
     origem: opcional(z.enum(ORIGENS_CLIENTE, { error: "Origem inválida." })),
     observacoes: textoOpcional(2000),
+    desejos: esquemaDesejosDoCliente.default([]),
   },
   corpoInvalido,
 );
@@ -72,7 +74,7 @@ export type ClienteValidado = z.output<typeof esquemaCliente>;
 export const esquemaNovoInteresse = z.object(
   {
     clienteId: z.uuid({ error: "Escolha um cliente." }),
-    carroId: z.uuid({ error: "Escolha um carro." }),
+    carroId: z.uuid({ error: "Escolha um veículo." }),
   },
   corpoInvalido,
 );
@@ -106,6 +108,7 @@ export interface Cliente {
   email: string | null;
   origem: OrigemCliente | null;
   observacoes: string | null;
+  desejos: string[];
   interesses: number;
   criadoEm: string;
   atualizadoEm: string;

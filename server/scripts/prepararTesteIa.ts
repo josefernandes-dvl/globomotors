@@ -92,7 +92,7 @@ ${leitura}
 Entrar              ${WEB}/login
   e-mail            ${email}
   senha             ${SENHA}
-Novo carro          ${WEB}/dashboard/cars/new
+Novo veículo        ${WEB}/dashboard/cars/new
 Rascunho para editar ${WEB}/dashboard/cars/${dados.carro.id}
 
 Texto 1, anúncio (no novo carro):
@@ -104,7 +104,7 @@ ${OFERTA}
 Texto 3, atualização (no rascunho):
 ${ATUALIZACAO}
 
-Imagens: fotos do carro, do painel ou do documento, em JPG, PNG ou WebP, até 4 por leitura.
+Imagens: fotos do veículo, do painel ou do documento, em JPG, PNG ou WebP, até 4 por leitura.
 `);
 }
 

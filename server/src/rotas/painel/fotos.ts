@@ -11,7 +11,7 @@ import type { Repositorios } from "../../repositorios/index.ts";
 import { idDaRota, naoEncontrado } from "../parametros.ts";
 import { urlDaFoto } from "./mapeadores.ts";
 
-const CARRO_NAO_ENCONTRADO = "Carro não encontrado.";
+const CARRO_NAO_ENCONTRADO = "Veículo não encontrado.";
 const FOTO_NAO_ENCONTRADA = "Foto não encontrada.";
 const ASSINATURA_JPEG = Buffer.from([0xff, 0xd8, 0xff]);
 const ASSINATURA_PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);

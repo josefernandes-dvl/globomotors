@@ -1,6 +1,7 @@
 import {
   errosDeCampo,
   esquemaCliente,
+  esquemaDesejosDoCliente,
   ORIGENS_CLIENTE,
   ROTULOS_ORIGEM_CLIENTE,
   type Cliente,
@@ -11,6 +12,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { BotaoConfirmar } from "../../componentes/BotaoConfirmar.tsx";
 import { CampoAreaTexto, CampoSelecao, CampoTexto } from "../../componentes/Campo.tsx";
+import { CampoDeItens } from "../../componentes/CampoDeItens.tsx";
 import { Icone } from "../../componentes/Icone.tsx";
 import { api, ErroApi } from "../../lib/api.ts";
 import { useAvisos } from "../../lib/avisos.ts";
@@ -31,6 +33,7 @@ interface ValoresCliente {
   email: string;
   origem: string;
   observacoes: string;
+  desejos: string[];
 }
 
 const SECAO = "rounded-[14px] border border-linha bg-painel p-4";
@@ -42,6 +45,7 @@ function valoresDoCliente(cliente?: Cliente): ValoresCliente {
     email: cliente?.email ?? "",
     origem: cliente?.origem ?? "",
     observacoes: cliente?.observacoes ?? "",
+    desejos: cliente?.desejos ?? [],
   };
 }
 
@@ -126,7 +130,7 @@ function FormularioCliente({
     onError: (erro) => avisar(mensagemDeErro(erro), "erro"),
   });
 
-  function campo(nome: keyof ValoresCliente) {
+  function campo(nome: Exclude<keyof ValoresCliente, "desejos">) {
     return {
       name: nome,
       value: valores[nome],
@@ -191,11 +195,22 @@ function FormularioCliente({
                 </option>
               ))}
             </CampoSelecao>
+            <CampoDeItens
+              rotulo="Interesses"
+              rotuloNovo="Novo interesse"
+              placeholder="SUV automático"
+              esquema={esquemaDesejosDoCliente}
+              itens={valores.desejos}
+              erro={erros.desejos}
+              onMudar={(desejos) => setValores((atuais) => ({ ...atuais, desejos }))}
+              dica="Tipos de veículo que o cliente procura, como “SUV automático” ou “Onix 2020”. Quando um veículo compatível entrar no catálogo, ele aparece em Interesses."
+              className="sm:col-span-2"
+            />
             <CampoAreaTexto
               rotulo="Observações"
               rows={4}
               maxLength={2000}
-              dica="O que o cliente procura, faixa de preço, se tem carro na troca…"
+              dica="Faixa de preço, se tem veículo na troca, melhor horário para contato…"
               className="sm:col-span-2"
               {...campo("observacoes")}
             />
@@ -220,7 +235,7 @@ function FormularioCliente({
             <ListaDeInteresses clienteId={cliente.id} />
           ) : (
             <p className="text-sm text-suave">
-              Depois de cadastrar o cliente, você pode registrar os carros de interesse dele.
+              Depois de cadastrar o cliente, você pode registrar os veículos de interesse dele.
             </p>
           )}
         </aside>

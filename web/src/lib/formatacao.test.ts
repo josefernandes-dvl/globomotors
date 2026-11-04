@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { carroPainel } from "../testes/dados.ts";
 import {
+  avisoDeInteressados,
   fichaTecnica,
   formatarAnos,
   formatarData,
@@ -9,6 +10,7 @@ import {
   formatarPreco,
   formatarReais,
   formatarTelefone,
+  nomeDoVeiculo,
   plural,
   resumoDoCarro,
   tituloDoCarro,
@@ -70,6 +72,37 @@ describe("formatarAnos", () => {
 describe("título, resumo e ficha técnica", () => {
   it("monta o título com marca e modelo", () => {
     expect(tituloDoCarro({ marca: "Fiat", modelo: "Pulse" })).toBe("Fiat Pulse");
+  });
+
+  it("nomeia o veículo com marca, modelo, versão e anos, pulando o que falta", () => {
+    expect(nomeDoVeiculo(carroPainel())).toBe("Chevrolet Onix 1.0 Turbo LTZ 2020/2021");
+    expect(
+      nomeDoVeiculo({
+        marca: "Honda",
+        modelo: "CG 160",
+        versao: null,
+        anoFabricacao: 2022,
+        anoModelo: 2022,
+      }),
+    ).toBe("Honda CG 160 2022");
+    expect(
+      nomeDoVeiculo({
+        marca: "Fiat",
+        modelo: "Pulse",
+        versao: "",
+        anoFabricacao: null,
+        anoModelo: null,
+      }),
+    ).toBe("Fiat Pulse");
+  });
+
+  it("avisa quantos clientes têm possível interesse no veículo", () => {
+    expect(avisoDeInteressados(1, { marca: "Honda", modelo: "CG 160" })).toBe(
+      "1 cliente tem possível interesse no veículo Honda CG 160. Veja em Interesses.",
+    );
+    expect(avisoDeInteressados(3, carroPainel())).toBe(
+      "3 clientes têm possível interesse no veículo Chevrolet Onix. Veja em Interesses.",
+    );
   });
 
   it("resume km e câmbio, sem os anos, e pula o que falta", () => {

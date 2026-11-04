@@ -70,6 +70,12 @@ export function tituloDoCarro(carro: { marca: string; modelo: string }) {
   return `${carro.marca} ${carro.modelo}`;
 }
 
+export function nomeDoVeiculo(
+  carro: { marca: string; modelo: string; versao: string | null } & AnosDoCarro,
+) {
+  return [tituloDoCarro(carro), carro.versao, formatarAnos(carro)].filter(Boolean).join(" ");
+}
+
 export function resumoDoCarro(carro: ResumoDoCarro) {
   return [formatarKm(carro.km), carro.cambio].filter(Boolean).join(" · ");
 }
@@ -107,4 +113,8 @@ export function formatarTelefone(telefone: string) {
 
 export function plural(quantidade: number, singular: string, varios: string) {
   return `${formatarNumero(quantidade)} ${quantidade === 1 ? singular : varios}`;
+}
+
+export function avisoDeInteressados(quantidade: number, carro: { marca: string; modelo: string }) {
+  return `${plural(quantidade, "cliente tem", "clientes têm")} possível interesse no veículo ${tituloDoCarro(carro)}. Veja em Interesses.`;
 }

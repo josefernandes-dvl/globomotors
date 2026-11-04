@@ -2,10 +2,13 @@ import type {
   CarroPainel,
   CarroPublico,
   Cliente,
+  ClienteComDesejos,
+  Desejo,
   Interesse,
   Loja,
   LojaPublica,
   Usuario,
+  VeiculoPossivel,
 } from "@globomotors/shared";
 import type { RotasSimuladas } from "./simularApi.ts";
 
@@ -75,6 +78,7 @@ export function carroPainel(campos: Partial<CarroPainel> = {}): CarroPainel {
     observacoesInternas: "Pneus novos",
     interessados: 0,
     vendidoEm: null,
+    publicadoEm: "2026-10-01T13:00:00.000Z",
     criadoEm: "2026-10-01T13:00:00.000Z",
     atualizadoEm: "2026-10-01T13:00:00.000Z",
     ...campos,
@@ -89,6 +93,7 @@ export function cliente(campos: Partial<Cliente> = {}): Cliente {
     email: "ana@exemplo.com",
     origem: "instagram",
     observacoes: "Procura hatch automático",
+    desejos: [],
     interesses: 0,
     criadoEm: "2026-10-20T15:00:00.000Z",
     atualizadoEm: "2026-10-20T15:00:00.000Z",
@@ -117,10 +122,46 @@ export function interesse(campos: Partial<Interesse> = {}): Interesse {
   };
 }
 
+export function veiculoPossivel(campos: Partial<VeiculoPossivel> = {}): VeiculoPossivel {
+  return {
+    id: "c1",
+    marca: "Chevrolet",
+    modelo: "Onix",
+    versao: "1.0 Turbo LTZ",
+    anoFabricacao: 2020,
+    anoModelo: 2021,
+    precoVenda: 8_990_000,
+    ...campos,
+  };
+}
+
+export function desejo(campos: Partial<Desejo> = {}): Desejo {
+  return {
+    id: "d1",
+    nome: "Onix automático",
+    anoMinimo: null,
+    precoMaximo: null,
+    observacoes: null,
+    criadoEm: "2026-10-22T15:00:00.000Z",
+    possiveis: [],
+    ...campos,
+  };
+}
+
+export function clienteComDesejos(campos: Partial<ClienteComDesejos> = {}): ClienteComDesejos {
+  return {
+    cliente: { id: "k1", nome: "Ana Souza", telefone: "11912345678" },
+    possivelDesde: null,
+    desejos: [desejo()],
+    ...campos,
+  };
+}
+
 export function rotasDoPainel(extra: RotasSimuladas = {}): RotasSimuladas {
   return {
     "GET /api/auth/me": { usuario: USUARIO },
     "GET /api/dashboard/store": { loja: LOJA },
+    "GET /api/dashboard/wishes": { clientes: [] },
     ...extra,
   };
 }

@@ -5,6 +5,7 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   carros,
   clientes,
+  desejos,
   fotosCarro,
   interesses,
   sessoes,
@@ -73,7 +74,7 @@ async function povoar() {
   const { corpo: novoCliente } = await api.requisitar<{ cliente: { id: string } }>(
     "POST",
     "/dashboard/customers",
-    { corpo: clienteDeTeste(), cookie },
+    { corpo: clienteDeTeste({ desejos: ["Onix automático"] }), cookie },
   );
   await api.requisitar("POST", "/dashboard/interests", {
     corpo: { clienteId: novoCliente.cliente.id, carroId: novoCarro.carro.id },
@@ -94,6 +95,7 @@ async function contar() {
     carros: await db.$count(carros),
     fotos: await db.$count(fotosCarro),
     clientes: await db.$count(clientes),
+    desejos: await db.$count(desejos),
     interesses: await db.$count(interesses),
     tentativas: await db.$count(tentativasLogin),
   };
@@ -107,6 +109,7 @@ it("deixa só o vendedor informado, sem carros, fotos, clientes, interesses nem 
     carros: 1,
     fotos: 1,
     clientes: 1,
+    desejos: 1,
     interesses: 1,
     tentativas: 2,
   });
@@ -125,6 +128,7 @@ it("deixa só o vendedor informado, sem carros, fotos, clientes, interesses nem 
     carros: 0,
     fotos: 0,
     clientes: 0,
+    desejos: 0,
     interesses: 0,
     tentativas: 0,
   });

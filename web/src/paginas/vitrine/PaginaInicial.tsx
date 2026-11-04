@@ -15,7 +15,7 @@ const PASSOS = [
   },
   {
     titulo: "Chame no WhatsApp",
-    texto: "Tire suas dúvidas e combine uma visita para ver o carro de perto.",
+    texto: "Tire suas dúvidas e combine uma visita para ver o veículo de perto.",
   },
   { titulo: "Feche negócio", texto: "Acertou os detalhes? É só combinar a entrega." },
 ];

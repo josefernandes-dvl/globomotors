@@ -471,7 +471,7 @@ export async function gerarCatalogoPdf(origem = window.location.origin) {
     api.get<{ loja: LojaPublica }>("/showroom/store"),
     import("jspdf"),
   ]);
-  if (carros.length === 0) throw new Error("Não há carros publicados no catálogo para exportar.");
+  if (carros.length === 0) throw new Error("Não há veículos publicados no catálogo para exportar.");
   const ordenados = ordenarCarros(carros, "destaque", (carro) => carro.preco);
   const [logo, emblema, ...fotos] = await Promise.all([
     marcaDaLoja("/logo.webp", 760 / 647, 760, "#0A1220"),

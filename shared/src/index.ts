@@ -1,8 +1,9 @@
 export * from "./auth.ts";
-export { digitosDoTelefone } from "./campos.ts";
+export { digitosDoTelefone, type EsquemaListaDeTextos } from "./campos.ts";
 export * from "./carros.ts";
 export * from "./clientes.ts";
 export * from "./datas.ts";
+export * from "./desejos.ts";
 export * from "./erros.ts";
 export * from "./ia.ts";
 export * from "./loja.ts";

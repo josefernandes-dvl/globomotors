@@ -8,7 +8,7 @@ import { ImagemDoCarro } from "../../componentes/ImagemDoCarro.tsx";
 import { api } from "../../lib/api.ts";
 import { useAvisos } from "../../lib/avisos.ts";
 import { linkWhatsApp } from "../../lib/compartilhamento.ts";
-import { formatarAnos, formatarTelefone, tituloDoCarro } from "../../lib/formatacao.ts";
+import { formatarTelefone, nomeDoVeiculo, tituloDoCarro } from "../../lib/formatacao.ts";
 import { mensagemDeErro } from "../../lib/formularios.ts";
 import {
   CHAVE_PAINEL,
@@ -47,7 +47,7 @@ export function ListaDeInteresses(props: Props) {
   return (
     <section aria-labelledby="titulo-interessados" className="flex flex-col gap-3">
       <h2 id="titulo-interessados" className="text-base font-extrabold font-stretch-[112%]">
-        {doCarro ? "Clientes interessados" : "Carros de interesse"}
+        {doCarro ? "Clientes interessados" : "Veículos de interesse"}
       </h2>
       {interesses.isPending && (
         <p role="status" className="text-sm text-suave">
@@ -63,7 +63,7 @@ export function ListaDeInteresses(props: Props) {
         <p className="text-sm text-suave">
           {doCarro
             ? "Nenhum cliente interessado ainda."
-            : "Este cliente ainda não tem carro de interesse."}
+            : "Este cliente ainda não tem veículo de interesse."}
         </p>
       )}
       {lista.length > 0 && (
@@ -197,15 +197,12 @@ function NovoInteresseNoCliente({
     .filter((carro) => carro.status !== "vendido" && !vinculados.has(carro.id))
     .map((carro) => ({
       id: carro.id,
-      rotulo: [
-        [tituloDoCarro(carro), carro.versao, formatarAnos(carro)].filter(Boolean).join(" "),
-        ROTULOS_STATUS_CARRO[carro.status],
-      ].join(" · "),
+      rotulo: [nomeDoVeiculo(carro), ROTULOS_STATUS_CARRO[carro.status]].join(" · "),
     }));
   return (
     <FormularioDeInteresse
-      rotulo="Carro"
-      vazio="Escolha um carro"
+      rotulo="Veículo"
+      vazio="Escolha um veículo"
       opcoes={opcoes}
       carregando={carros.isPending}
       montar={(carroId) => ({ clienteId, carroId })}

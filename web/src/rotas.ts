@@ -77,6 +77,13 @@ export const rotas: RouteObject[] = [
             },
           },
           {
+            path: "wishlist",
+            lazy: async () => {
+              const { PaginaInteresses } = await import("./paginas/painel/PaginaInteresses.tsx");
+              return { Component: PaginaInteresses };
+            },
+          },
+          {
             path: "funnel",
             lazy: async () => {
               const { PaginaFunil } = await import("./paginas/painel/PaginaFunil.tsx");

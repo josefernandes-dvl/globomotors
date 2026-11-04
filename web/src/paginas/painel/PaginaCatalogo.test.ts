@@ -3,7 +3,7 @@ import { userEvent } from "@testing-library/user-event";
 import type { jsPDF } from "jspdf";
 import { describe, expect, it, vi } from "vitest";
 import { gerarCatalogoPdf } from "../../lib/pdf.ts";
-import { carroPainel, LOJA, rotasDoPainel } from "../../testes/dados.ts";
+import { carroPainel, clienteComDesejos, LOJA, rotasDoPainel } from "../../testes/dados.ts";
 import { renderizarRota } from "../../testes/renderizar.tsx";
 import { escolherOpcao, lerOpcoes } from "../../testes/selecao.ts";
 import { respostaDeErro, simularApi, type RotasSimuladas } from "../../testes/simularApi.ts";
@@ -111,8 +111,8 @@ describe("PaginaCatalogo", () => {
 
     const onix = await abrirCatalogo();
 
-    expect(screen.getByRole("heading", { level: 1, name: "Carros" })).toBeInTheDocument();
-    await waitFor(() => expect(document.title).toBe("Carros · Painel"));
+    expect(screen.getByRole("heading", { level: 1, name: "Veículos" })).toBeInTheDocument();
+    await waitFor(() => expect(document.title).toBe("Veículos · Painel"));
     expect(numeros()).toEqual({
       "No catálogo": "4",
       Disponíveis: "1",
@@ -185,7 +185,7 @@ describe("PaginaCatalogo", () => {
     expect(within(kwid).queryByText(/Vendedor/)).not.toBeInTheDocument();
     expect(within(kwid).queryByText(/km|·/)).not.toBeInTheDocument();
 
-    expect(screen.getByRole("link", { name: "Adicionar carro" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Adicionar veículo" })).toHaveAttribute(
       "href",
       "/dashboard/cars/new",
     );
@@ -246,7 +246,7 @@ describe("PaginaCatalogo", () => {
 
     await escolherOpcao(usuario, marca, "Chevrolet");
     expect(screen.getByRole("heading", { level: 2, name: "Nada encontrado" })).toBeInTheDocument();
-    expect(screen.getByText("Nenhum carro corresponde aos filtros.")).toBeInTheDocument();
+    expect(screen.getByText("Nenhum veículo corresponde aos filtros.")).toBeInTheDocument();
 
     await usuario.click(screen.getByRole("button", { name: "Limpar filtros" }));
     expect(titulosDosCarros()).toHaveLength(4);
@@ -324,10 +324,48 @@ describe("PaginaCatalogo", () => {
 
     const reservado = { ...ONIX, status: "reservado" as const };
     rotas["GET /api/dashboard/cars"] = { carros: [reservado, HB20, COMPASS, KWID] };
-    responder({ carro: reservado });
+    responder({ carro: reservado, possiveisInteressados: 0 });
 
     expect(await screen.findByRole("status")).toHaveTextContent("Status alterado para Reservado.");
     expect(status).toHaveTextContent("Reservado");
+  });
+
+  it("avisa quantos clientes têm possível interesse quando o veículo entra no catálogo", async () => {
+    const usuario = userEvent.setup();
+    const { rotas, corpos } = simularCatalogo({
+      "PATCH /api/dashboard/cars/c4/status": () => {
+        const publicado = { ...KWID, status: "disponivel" as const };
+        rotas["GET /api/dashboard/cars"] = { carros: [ONIX, HB20, COMPASS, publicado] };
+        rotas["GET /api/dashboard/wishes"] = {
+          clientes: [
+            clienteComDesejos({ possivelDesde: "2026-11-04T12:00:00.000Z" }),
+            clienteComDesejos({
+              cliente: { id: "k2", nome: "Bruno Lima", telefone: "19933334444" },
+              possivelDesde: "2026-11-04T12:00:00.000Z",
+            }),
+          ],
+        };
+        return { carro: publicado, possiveisInteressados: 2 };
+      },
+    });
+    await abrirCatalogo();
+
+    await escolherOpcao(
+      usuario,
+      within(cartao("Renault Kwid")).getByRole("combobox", { name: "Status" }),
+      "Disponível",
+    );
+
+    expect(
+      await screen.findByText(
+        "2 clientes têm possível interesse no veículo Renault Kwid. Veja em Interesses.",
+      ),
+    ).toHaveAttribute("role", "status");
+    expect(screen.getByText("Status alterado para Disponível.")).toHaveAttribute("role", "status");
+    expect(corpos("PATCH /api/dashboard/cars/c4/status")).toEqual([{ status: "disponivel" }]);
+    expect(
+      await screen.findByRole("link", { name: "Interesses (2 clientes com possível interesse)" }),
+    ).toHaveAttribute("href", "/dashboard/wishlist");
   });
 
   it("não chama a API quando o status escolhido é o mesmo", async () => {
@@ -350,7 +388,7 @@ describe("PaginaCatalogo", () => {
       "PATCH /api/dashboard/cars/c1/status": respostaDeErro(
         404,
         "nao_encontrado",
-        "Carro não encontrado.",
+        "Veículo não encontrado.",
       ),
     });
     const onix = await abrirCatalogo();
@@ -358,7 +396,7 @@ describe("PaginaCatalogo", () => {
 
     await escolherOpcao(usuario, status, "Vendido");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Carro não encontrado.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Veículo não encontrado.");
     expect(status).toHaveTextContent("Disponível");
     expect(numeros()).toMatchObject({ Disponíveis: "1", Vendidos: "1" });
   });
@@ -427,7 +465,7 @@ describe("PaginaCatalogo", () => {
     const onix = await abrirCatalogo();
 
     await usuario.click(within(onix).getByRole("button", { name: "Excluir" }));
-    const confirmacao = within(onix).getByRole("group", { name: "Excluir este carro?" });
+    const confirmacao = within(onix).getByRole("group", { name: "Excluir este veículo?" });
     await usuario.click(within(confirmacao).getByRole("button", { name: "Não" }));
     expect(within(onix).queryByRole("group")).not.toBeInTheDocument();
     expect(chaves()).not.toContain("DELETE /api/dashboard/cars/c1");
@@ -435,7 +473,7 @@ describe("PaginaCatalogo", () => {
     await usuario.click(within(onix).getByRole("button", { name: "Excluir" }));
     await usuario.click(within(onix).getByRole("button", { name: "Sim" }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Carro excluído do catálogo.");
+    expect(await screen.findByRole("status")).toHaveTextContent("Veículo excluído do catálogo.");
     expect(chaves()).toContain("DELETE /api/dashboard/cars/c1");
     expect(titulosDosCarros()).toEqual(["Hyundai HB20", "Jeep Compass", "Renault Kwid"]);
     await waitFor(() => expect(numeros()).toMatchObject({ "No catálogo": "3" }));
@@ -485,7 +523,7 @@ describe("PaginaCatalogo", () => {
   it("avisa quando o PDF não pode ser gerado", async () => {
     const usuario = userEvent.setup();
     vi.mocked(gerarCatalogoPdf).mockRejectedValue(
-      new Error("Não há carros publicados no catálogo para exportar."),
+      new Error("Não há veículos publicados no catálogo para exportar."),
     );
     simularCatalogo();
     await abrirCatalogo();
@@ -493,7 +531,7 @@ describe("PaginaCatalogo", () => {
     await usuario.click(screen.getByRole("button", { name: "Baixar PDF" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Não há carros publicados no catálogo para exportar.",
+      "Não há veículos publicados no catálogo para exportar.",
     );
     expect(screen.getByRole("button", { name: "Baixar PDF" })).toBeEnabled();
   });
@@ -508,12 +546,12 @@ describe("PaginaCatalogo", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Cadastre o primeiro carro. Ele entra como rascunho e só vai para o catálogo quando você publicar.",
+        "Cadastre o primeiro veículo. Ele entra como rascunho e só vai para o catálogo quando você publicar.",
       ),
     ).toBeInTheDocument();
     expect(
       screen
-        .getAllByRole("link", { name: "Adicionar carro" })
+        .getAllByRole("link", { name: "Adicionar veículo" })
         .map((link) => link.getAttribute("href")),
     ).toEqual(["/dashboard/cars/new", "/dashboard/cars/new"]);
     expect(screen.queryByRole("term")).not.toBeInTheDocument();
@@ -533,7 +571,7 @@ describe("PaginaCatalogo", () => {
 
     renderizarRota("/dashboard/cars");
 
-    await screen.findByRole("heading", { level: 1, name: "Carros" });
+    await screen.findByRole("heading", { level: 1, name: "Veículos" });
     expect(screen.getByRole("status")).toHaveTextContent("Carregando…");
     responder(respostaDeErro(500, "erro_interno", "Erro interno."));
     expect(await screen.findByRole("alert")).toHaveTextContent("Erro interno.");

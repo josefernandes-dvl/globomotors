@@ -115,7 +115,7 @@ describe("GET /api/dashboard/interests", () => {
   });
 
   it.each([
-    ["carId", "Carro inválido."],
+    ["carId", "Veículo inválido."],
     ["customerId", "Cliente inválido."],
   ])("recusa %s inválido", async (campo, mensagem) => {
     const resposta = await api.requisitar("GET", `/dashboard/interests?${campo}=abc`, { cookie });
@@ -195,14 +195,14 @@ describe("POST /api/dashboard/interests", () => {
 
     expect(resposta.status).toBe(409);
     expect(resposta.corpo).toEqual({
-      erro: { codigo: "conflito", mensagem: "Este cliente já está interessado neste carro." },
+      erro: { codigo: "conflito", mensagem: "Este cliente já está interessado neste veículo." },
     });
     expect(await listar(`?carId=${carro.id}`)).toHaveLength(1);
   });
 
   it.each([
     ["cliente", "Cliente não encontrado.", { clienteId: ID_INEXISTENTE }],
-    ["carro", "Carro não encontrado.", { carroId: ID_INEXISTENTE }],
+    ["carro", "Veículo não encontrado.", { carroId: ID_INEXISTENTE }],
   ])("responde 404 para %s que não existe", async (_caso, mensagem, inexistente) => {
     const corpo = { clienteId: (await criarCliente()).id, carroId: (await criarCarro()).id };
 
@@ -225,7 +225,7 @@ describe("POST /api/dashboard/interests", () => {
         mensagem: "Dados inválidos.",
         campos: [
           { campo: "clienteId", mensagem: "Escolha um cliente." },
-          { campo: "carroId", mensagem: "Escolha um carro." },
+          { campo: "carroId", mensagem: "Escolha um veículo." },
         ],
       },
     });

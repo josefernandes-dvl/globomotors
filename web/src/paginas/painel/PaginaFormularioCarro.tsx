@@ -15,6 +15,7 @@ import {
   TIPOS_DE_FOTO,
   type CarroExtraido,
   type CarroPainel,
+  type CarroSalvo,
   type CarroValidado,
   type FotoCarro,
 } from "@globomotors/shared";
@@ -24,13 +25,14 @@ import {
   useQueryClient,
   type UseMutationResult,
 } from "@tanstack/react-query";
-import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { CampoAreaTexto, CampoMarcar, CampoSelecao, CampoTexto } from "../../componentes/Campo.tsx";
+import { BOTAO_TIRAR, CampoDeItens, ETIQUETA } from "../../componentes/CampoDeItens.tsx";
 import { Icone } from "../../componentes/Icone.tsx";
 import { api, ErroApi } from "../../lib/api.ts";
 import { useAvisos } from "../../lib/avisos.ts";
-import { formatarDinheiro, plural } from "../../lib/formatacao.ts";
+import { avisoDeInteressados, formatarDinheiro, plural } from "../../lib/formatacao.ts";
 import {
   lerDinheiro,
   paraDadosCarro,
@@ -72,15 +74,11 @@ const SECAO = `${CAIXA} border-linha bg-painel`;
 const SECAO_PRIVADA = `${CAIXA} border-dashed border-[#d9c38f] bg-[#fffaf0]`;
 const TITULO_SECAO = "mb-3 text-base font-extrabold font-stretch-[112%]";
 const GRADE = "grid grid-cols-2 gap-3 sm:grid-cols-6";
-const ETIQUETA =
-  "flex max-w-full items-center gap-1 rounded-2xl border border-linha bg-papel py-1 pr-1 pl-3 text-[13px] font-semibold";
-const BOTAO_TIRAR =
-  "grid size-6 flex-none cursor-pointer place-items-center rounded-full text-suave transition hover:bg-black/5 hover:text-perigo";
 
 async function salvarCarro({ id, dados, fotos, removidas }: Salvamento) {
-  const { carro } = id
-    ? await api.put<{ carro: CarroPainel }>(`/dashboard/cars/${id}`, dados)
-    : await api.post<{ carro: CarroPainel }>("/dashboard/cars", dados);
+  const { carro, possiveisInteressados } = id
+    ? await api.put<CarroSalvo>(`/dashboard/cars/${id}`, dados)
+    : await api.post<CarroSalvo>("/dashboard/cars", dados);
   const falhas: string[] = [];
   const apagadas = new Set<string>();
   for (const fotoId of removidas) {
@@ -121,7 +119,7 @@ async function salvarCarro({ id, dados, fotos, removidas }: Salvamento) {
       falhas.push(mensagemDeErro(erro));
     }
   }
-  return { carro, falhas };
+  return { carro, possiveisInteressados, falhas };
 }
 
 export function PaginaFormularioCarro() {
@@ -138,9 +136,9 @@ function EdicaoDoCarro({ id }: { id: string }) {
   }
   if (consulta.isError) {
     return (
-      <PaginaDoPainel titulo="Editar carro">
+      <PaginaDoPainel titulo="Editar veículo">
         {naoExiste ? (
-          <CaixaVazia titulo="Carro não encontrado">
+          <CaixaVazia titulo="Veículo não encontrado">
             <p>Ele pode ter sido excluído.</p>
             <Link to="/dashboard/cars" className="botao mt-4">
               Voltar ao catálogo
@@ -153,7 +151,7 @@ function EdicaoDoCarro({ id }: { id: string }) {
     );
   }
   return (
-    <PaginaDoPainel titulo="Editar carro">
+    <PaginaDoPainel titulo="Editar veículo">
       <CarregandoPainel />
     </PaginaDoPainel>
   );
@@ -187,14 +185,15 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
 
   const salvar = useMutation({
     mutationFn: salvarCarro,
-    onSuccess: ({ carro: salvo, falhas }) => {
+    onSuccess: ({ carro: salvo, possiveisInteressados, falhas }) => {
       void queryClient.invalidateQueries({ queryKey: CHAVE_PAINEL });
+      if (possiveisInteressados > 0) avisar(avisoDeInteressados(possiveisInteressados, salvo));
       if (falhas.length > 0) {
-        avisar(`O carro foi salvo, mas houve um problema com as fotos: ${falhas[0]}`, "erro");
+        avisar(`O veículo foi salvo, mas houve um problema com as fotos: ${falhas[0]}`, "erro");
         void navigate(`/dashboard/cars/${salvo.id}`, { replace: true });
         return;
       }
-      avisar(carro ? "Alterações salvas." : "Carro adicionado ao catálogo.");
+      avisar(carro ? "Alterações salvas." : "Veículo adicionado ao catálogo.");
       void navigate("/dashboard/cars");
     },
     onError: (erro) => {
@@ -216,7 +215,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
   async function adicionarFotos(arquivos: File[]) {
     const vagas = MAX_FOTOS_POR_CARRO - fotos.length - processando;
     if (arquivos.length > vagas) {
-      avisar(`Cada carro pode ter no máximo ${MAX_FOTOS_POR_CARRO} fotos.`, "erro");
+      avisar(`Cada veículo pode ter no máximo ${MAX_FOTOS_POR_CARRO} fotos.`, "erro");
     }
     const escolhidos = arquivos.slice(0, Math.max(0, vagas));
     setProcessando((atual) => atual + escolhidos.length);
@@ -283,7 +282,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
 
   return (
     <PaginaDoPainel
-      titulo={carro ? "Editar carro" : "Novo carro"}
+      titulo={carro ? "Editar veículo" : "Novo veículo"}
       acoes={
         carro &&
         publicado && (
@@ -378,10 +377,15 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
                   }
                 />
               </div>
-              <CampoDeAdicionais
+              <CampoDeItens
+                rotulo="Adicionais"
+                rotuloNovo="Novo adicional"
+                placeholder="Ar-condicionado"
+                esquema={esquemaOpcionais}
                 itens={valores.opcionais}
                 erro={erros.opcionais}
                 onMudar={(opcionais) => setValores((atuais) => ({ ...atuais, opcionais }))}
+                className="col-span-2 sm:col-span-6"
               />
               <CampoAreaTexto
                 rotulo="Descrição"
@@ -513,7 +517,7 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
             <ListaDeInteresses carroId={carro.id} />
           ) : (
             <p className="text-sm text-suave">
-              Depois de salvar o carro, você pode registrar os clientes interessados nele.
+              Depois de salvar o veículo, você pode registrar os clientes interessados nele.
             </p>
           )}
         </aside>
@@ -532,101 +536,6 @@ function Opcoes({ valores }: { valores: readonly string[] }) {
         </option>
       ))}
     </>
-  );
-}
-
-interface PropsAdicionais {
-  itens: string[];
-  erro: string | undefined;
-  onMudar: (itens: string[]) => void;
-}
-
-function CampoDeAdicionais({ itens, erro, onMudar }: PropsAdicionais) {
-  const id = useId();
-  const entrada = useRef<HTMLInputElement>(null);
-  const [novo, setNovo] = useState("");
-  const [aviso, setAviso] = useState<string | null>(null);
-  const mensagem = aviso ?? erro;
-
-  function adicionar() {
-    entrada.current?.focus();
-    const resultado = esquemaOpcionais.safeParse([...itens, novo]);
-    if (!resultado.success) {
-      setAviso(errosDeCampo(resultado.error)[0]?.mensagem ?? null);
-      return;
-    }
-    if (resultado.data.length === itens.length) {
-      setAviso(`“${novo.trim()}” já está na lista.`);
-      return;
-    }
-    onMudar(resultado.data);
-    setNovo("");
-    setAviso(null);
-  }
-
-  function remover(item: string) {
-    onMudar(itens.filter((atual) => atual !== item));
-    setAviso(null);
-  }
-
-  return (
-    <fieldset className="col-span-2 sm:col-span-6">
-      <legend className="rotulo float-left mb-1.5 w-full">Adicionais</legend>
-      <div className="clear-left flex flex-col gap-2">
-        {itens.length > 0 && (
-          <ul className="flex flex-wrap gap-1.5">
-            {itens.map((item) => (
-              <li key={item} className={ETIQUETA}>
-                <span className="min-w-0 wrap-break-word">{item}</span>
-                <button
-                  type="button"
-                  aria-label={`Remover ${item}`}
-                  onClick={() => remover(item)}
-                  className={BOTAO_TIRAR}
-                >
-                  <Icone nome="fechar" className="size-3.5" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="flex gap-2">
-          <input
-            ref={entrada}
-            aria-label="Novo adicional"
-            placeholder="Ar-condicionado"
-            enterKeyHint="enter"
-            value={novo}
-            onChange={(evento) => {
-              setNovo(evento.target.value);
-              setAviso(null);
-            }}
-            onKeyDown={(evento) => {
-              if (evento.key !== "Enter") return;
-              evento.preventDefault();
-              if (novo.trim()) adicionar();
-            }}
-            aria-invalid={mensagem ? true : undefined}
-            aria-describedby={mensagem ? `${id}-erro` : undefined}
-            className="entrada min-w-0 flex-1"
-          />
-          <button
-            type="button"
-            disabled={!novo.trim()}
-            onClick={adicionar}
-            className="botao flex-none"
-          >
-            <Icone nome="mais" />
-            Adicionar
-          </button>
-        </div>
-        {mensagem && (
-          <span id={`${id}-erro`} className="text-xs font-medium text-perigo">
-            {mensagem}
-          </span>
-        )}
-      </div>
-    </fieldset>
   );
 }
 
@@ -675,7 +584,7 @@ function PreenchimentoComIa({ ler, onPreencher }: PropsPreenchimento) {
           const quantidade = Object.keys(carro).length;
           if (quantidade === 0) {
             setErro(
-              "A IA não achou dados do carro. Escreva mais detalhes ou escolha outra imagem.",
+              "A IA não achou dados do veículo. Escreva mais detalhes ou escolha outra imagem.",
             );
             return;
           }
@@ -699,11 +608,11 @@ function PreenchimentoComIa({ ler, onPreencher }: PropsPreenchimento) {
     <section className={SECAO}>
       <h2 className="text-base font-extrabold font-stretch-[112%]">Preencher com IA</h2>
       <p className="mt-0.5 mb-3 text-[13px] text-suave">
-        Cole o anúncio, a conversa ou as anotações do carro, ou escolha fotos dele e do documento. A
-        IA escreve nos campos o que conseguir ler.
+        Cole o anúncio, a conversa ou as anotações do veículo, ou escolha fotos dele e do documento.
+        A IA escreve nos campos o que conseguir ler.
       </p>
       <CampoAreaTexto
-        rotulo="Texto sobre o carro"
+        rotulo="Texto sobre o veículo"
         placeholder="Onix LTZ 1.0 Turbo 2020/2021, 42 mil km, automático, R$ 89.900"
         value={texto}
         onChange={(evento) => {

@@ -26,6 +26,27 @@ export function textoOpcional(maximo: number) {
   );
 }
 
+export function listaDeTextos(singular: string, varios: string, tamanho: number, maximo: number) {
+  return z
+    .array(
+      z
+        .string({ error: `${singular} inválido.` })
+        .trim()
+        .min(1, `${singular} vazio.`)
+        .max(tamanho, `Cada ${singular.toLowerCase()} pode ter no máximo ${tamanho} caracteres.`),
+      { error: `Lista de ${varios} inválida.` },
+    )
+    .max(maximo, `Informe no máximo ${maximo} ${varios}.`)
+    .transform((lista) =>
+      lista.filter(
+        (item, indice) =>
+          lista.findIndex((outro) => outro.toLowerCase() === item.toLowerCase()) === indice,
+      ),
+    );
+}
+
+export type EsquemaListaDeTextos = ReturnType<typeof listaDeTextos>;
+
 export const esquemaCentavos = z
   .int({ error: "Informe um valor válido." })
   .min(0, { error: "O valor não pode ser negativo.", abort: true })

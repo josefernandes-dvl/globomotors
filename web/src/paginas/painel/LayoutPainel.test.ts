@@ -1,7 +1,7 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { LOJA, rotasDoPainel, USUARIO } from "../../testes/dados.ts";
+import { clienteComDesejos, LOJA, rotasDoPainel, USUARIO } from "../../testes/dados.ts";
 import { renderizarRota } from "../../testes/renderizar.tsx";
 import { respostaDeErro, simularApi, type RotasSimuladas } from "../../testes/simularApi.ts";
 
@@ -31,18 +31,65 @@ describe("LayoutPainel", () => {
         .getAllByRole("link")
         .map((link) => [link.textContent, link.getAttribute("href")]),
     ).toEqual([
-      ["Carros", "/dashboard/cars"],
+      ["Veículos", "/dashboard/cars"],
       ["Clientes", "/dashboard/customers"],
+      ["Interesses", "/dashboard/wishlist"],
       ["Funil", "/dashboard/funnel"],
       ["Loja", "/dashboard/store"],
     ]);
-    expect(within(secoes).getByRole("link", { name: "Carros" })).toHaveAttribute(
+    expect(within(secoes).getByRole("link", { name: "Veículos" })).toHaveAttribute(
       "aria-current",
       "page",
     );
     expect(screen.getByRole("link", { name: "Ver catálogo" })).toHaveAttribute("href", "/catalogo");
     expect(screen.getByRole("link", { name: "Ver catálogo" })).toHaveAttribute("target", "_blank");
     expect(screen.getByText(USUARIO.nome)).toBeInTheDocument();
+  });
+
+  it("marca Interesses com quantos clientes têm possível interesse", async () => {
+    const comPossivel = { possivelDesde: "2026-11-01T12:00:00.000Z" };
+    simularPainel({
+      "GET /api/dashboard/wishes": {
+        clientes: [
+          clienteComDesejos(comPossivel),
+          clienteComDesejos({
+            ...comPossivel,
+            cliente: { id: "k2", nome: "Bruno Lima", telefone: "1933334444" },
+          }),
+          clienteComDesejos({ cliente: { id: "k3", nome: "Carla Dias", telefone: "1133334444" } }),
+        ],
+      },
+    });
+
+    renderizarRota("/dashboard/cars");
+
+    const interesses = await screen.findByRole("link", {
+      name: "Interesses (2 clientes com possível interesse)",
+    });
+    expect(interesses).toHaveAttribute("href", "/dashboard/wishlist");
+    expect(within(interesses).getByText("2")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("usa o singular no marcador e o tira quando ninguém mais tem possível interesse", async () => {
+    let clientes = [clienteComDesejos({ possivelDesde: "2026-11-01T12:00:00.000Z" })];
+    simularPainel({ "GET /api/dashboard/wishes": () => ({ clientes }) });
+    renderizarRota("/dashboard/cars");
+    const secoes = await screen.findByRole("navigation", { name: "Seções do painel" });
+
+    expect(
+      await within(secoes).findByRole("link", {
+        name: "Interesses (1 cliente com possível interesse)",
+      }),
+    ).toBeInTheDocument();
+
+    clientes = [clienteComDesejos()];
+    fireEvent(window, new Event("visibilitychange"));
+
+    await waitFor(() =>
+      expect(within(secoes).getByRole("link", { name: /^Interesses/ }).textContent).toBe(
+        "Interesses",
+      ),
+    );
   });
 
   it("troca de seção pelo menu", async () => {
@@ -59,7 +106,7 @@ describe("LayoutPainel", () => {
       "aria-current",
       "page",
     );
-    expect(within(secoes).getByRole("link", { name: "Carros" })).not.toHaveAttribute(
+    expect(within(secoes).getByRole("link", { name: "Veículos" })).not.toHaveAttribute(
       "aria-current",
     );
   });
@@ -82,7 +129,7 @@ describe("LayoutPainel", () => {
     const usuario = userEvent.setup();
     const api = simularPainel({ "POST /api/auth/logout": new Response(null, { status: 204 }) });
     const { router, queryClient } = renderizarRota("/dashboard/cars");
-    await screen.findByRole("heading", { level: 1, name: "Carros" });
+    await screen.findByRole("heading", { level: 1, name: "Veículos" });
 
     await usuario.click(screen.getByRole("button", { name: "Sair" }));
 
@@ -112,7 +159,7 @@ describe("LayoutPainel", () => {
       "POST /api/auth/logout": respostaDeErro(500, "erro_interno", "Erro interno."),
     });
     const { router } = renderizarRota("/dashboard/cars");
-    await screen.findByRole("heading", { level: 1, name: "Carros" });
+    await screen.findByRole("heading", { level: 1, name: "Veículos" });
 
     await usuario.click(screen.getByRole("button", { name: "Sair" }));
 
@@ -139,6 +186,6 @@ describe("LayoutPainel", () => {
     await usuario.click(screen.getByRole("button", { name: "Tentar de novo" }));
 
     expect(await screen.findByText(USUARIO.nome)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1, name: "Carros" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Veículos" })).toBeInTheDocument();
   });
 });

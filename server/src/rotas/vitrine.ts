@@ -59,7 +59,7 @@ export function rotasVitrine(repositorios: Repositorios) {
   rotas.get("/cars/:slug", async (req, res) => {
     const loja = await repositorios.loja.obter();
     const carro = await repositorios.carros.buscarPublico(req.params.slug, statusVisiveis(loja));
-    if (!carro) throw naoEncontrado("Carro não encontrado.");
+    if (!carro) throw naoEncontrado("Veículo não encontrado.");
     res.json({ carro: paraCarroPublico(carro, loja) });
   });
 

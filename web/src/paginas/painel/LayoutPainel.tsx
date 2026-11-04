@@ -7,13 +7,17 @@ import { Carregando } from "../../componentes/Carregando.tsx";
 import { Icone } from "../../componentes/Icone.tsx";
 import { api } from "../../lib/api.ts";
 import { useAvisos } from "../../lib/avisos.ts";
+import { plural } from "../../lib/formatacao.ts";
 import { mensagemDeErro } from "../../lib/formularios.ts";
-import { CHAVE_PAINEL, consultaLojaPainel } from "../../lib/painel.ts";
+import { CHAVE_PAINEL, consultaDesejos, consultaLojaPainel } from "../../lib/painel.ts";
 import { CHAVE_SESSAO, useSessao } from "../../lib/sessao.ts";
 
+const SECAO_INTERESSES = "/dashboard/wishlist";
+
 const SECOES = [
-  { para: "/dashboard/cars", rotulo: "Carros" },
+  { para: "/dashboard/cars", rotulo: "Veículos" },
   { para: "/dashboard/customers", rotulo: "Clientes" },
+  { para: SECAO_INTERESSES, rotulo: "Interesses" },
   { para: "/dashboard/funnel", rotulo: "Funil" },
   { para: "/dashboard/store", rotulo: "Loja" },
 ];
@@ -59,6 +63,9 @@ function Painel({ usuario }: { usuario: Usuario }) {
   const queryClient = useQueryClient();
   const avisar = useAvisos();
   const { data: loja } = useQuery(consultaLojaPainel);
+  const { data: desejos } = useQuery(consultaDesejos);
+  const comPossivelInteresse =
+    desejos?.filter(({ possivelDesde }) => possivelDesde !== null).length ?? 0;
 
   const sair = useMutation({
     mutationFn: () => api.post("/auth/logout"),
@@ -95,6 +102,20 @@ function Painel({ usuario }: { usuario: Usuario }) {
                 }
               >
                 {rotulo}
+                {para === SECAO_INTERESSES && comPossivelInteresse > 0 && (
+                  <>
+                    {" "}
+                    <span
+                      aria-hidden="true"
+                      className="min-w-[18px] rounded-full bg-alerta px-1.5 text-center text-[11px] leading-[18px] font-extrabold text-tinta tabular-nums"
+                    >
+                      {comPossivelInteresse}
+                    </span>
+                    <span className="sr-only">
+                      {`(${plural(comPossivelInteresse, "cliente com possível interesse", "clientes com possível interesse")})`}
+                    </span>
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>

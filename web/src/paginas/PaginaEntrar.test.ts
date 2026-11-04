@@ -86,7 +86,7 @@ describe("PaginaEntrar", () => {
       { email: "marcos@globomotors.test", senha: "teste123" },
     ]);
     responder({ usuario: USUARIO });
-    expect(await screen.findByRole("heading", { name: "Carros" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Veículos" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/dashboard/cars");
     expect(screen.getByText(USUARIO.nome)).toBeInTheDocument();
   });
@@ -114,7 +114,7 @@ describe("PaginaEntrar", () => {
 
     await preencherEEntrar("marcos@globomotors.test", "teste123");
 
-    expect(await screen.findByRole("heading", { name: "Carros" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Veículos" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/dashboard/cars");
   });
 
@@ -140,7 +140,7 @@ describe("PaginaEntrar", () => {
 
     const { router } = renderizarRota("/login");
 
-    expect(await screen.findByRole("heading", { name: "Carros" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Veículos" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/dashboard/cars");
   });
 });

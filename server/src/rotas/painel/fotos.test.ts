@@ -137,7 +137,7 @@ describe("POST /api/dashboard/cars/:id/photos", () => {
 
     expect(resposta.status).toBe(404);
     expect(resposta.corpo).toEqual({
-      erro: { codigo: "nao_encontrado", mensagem: "Carro não encontrado." },
+      erro: { codigo: "nao_encontrado", mensagem: "Veículo não encontrado." },
     });
   });
 
@@ -149,7 +149,7 @@ describe("POST /api/dashboard/cars/:id/photos", () => {
 
     expect(resposta.status).toBe(409);
     expect(resposta.corpo).toEqual({
-      erro: { codigo: "conflito", mensagem: "Cada carro pode ter no máximo 20 fotos." },
+      erro: { codigo: "conflito", mensagem: "Cada veículo pode ter no máximo 20 fotos." },
     });
     expect(await idsDasFotos(carroId)).toHaveLength(20);
   });
@@ -216,7 +216,9 @@ describe("PATCH /api/dashboard/cars/:id/photos", () => {
       erro: {
         codigo: "validacao",
         mensagem: "Dados inválidos.",
-        campos: [{ campo: "ordem", mensagem: "Envie todas as fotos do carro, cada uma uma vez." }],
+        campos: [
+          { campo: "ordem", mensagem: "Envie todas as fotos do veículo, cada uma uma vez." },
+        ],
       },
     });
     expect(await idsDasFotos(carroId)).toEqual(ids);
@@ -287,6 +289,6 @@ describe("DELETE /api/dashboard/cars/:id/photos/:fotoId", () => {
     });
 
     expect([deNovo.status, fotoInvalida.status, carroInvalido.status]).toEqual([404, 404, 404]);
-    expect(carroInvalido.corpo).toMatchObject({ erro: { mensagem: "Carro não encontrado." } });
+    expect(carroInvalido.corpo).toMatchObject({ erro: { mensagem: "Veículo não encontrado." } });
   });
 });

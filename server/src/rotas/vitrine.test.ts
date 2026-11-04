@@ -398,7 +398,7 @@ describe("GET /api/showroom/cars/:slug", () => {
 
       expect(resposta.status).toBe(404);
       expect(resposta.corpo).toEqual({
-        erro: { codigo: "nao_encontrado", mensagem: "Carro não encontrado." },
+        erro: { codigo: "nao_encontrado", mensagem: "Veículo não encontrado." },
       });
     },
   );
@@ -447,7 +447,7 @@ describe("GET /api/showroom/cars/:slug", () => {
     const resposta = await vitrine("/cars/fusca-1970-abc123");
 
     expect(resposta.status).toBe(404);
-    expect(resposta.corpo).toMatchObject({ erro: { mensagem: "Carro não encontrado." } });
+    expect(resposta.corpo).toMatchObject({ erro: { mensagem: "Veículo não encontrado." } });
   });
 });
 

@@ -35,7 +35,7 @@ describe("rotas", () => {
     expect(
       await screen.findByRole("heading", { name: "Página não encontrada" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver os carros" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Ver os veículos" })).toHaveAttribute(
       "href",
       "/catalogo",
     );
@@ -64,7 +64,7 @@ describe("rotas", () => {
 
     const { router } = renderizarRota("/dashboard");
 
-    expect(await screen.findByRole("heading", { name: "Carros" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Veículos" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/dashboard/cars");
   });
 

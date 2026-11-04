@@ -57,8 +57,8 @@ describe("PaginaClientes", () => {
       "Cadastro",
     ]);
     expect(linhas()).toEqual([
-      ["Ana Souzaana@exemplo.com", "(11) 91234-5678", "Instagram", "2 carros", "20/10/2026"],
-      ["Bruno Lima", "(19) 3333-4444", "Não informada", "1 carro", "20/10/2026"],
+      ["Ana Souzaana@exemplo.com", "(11) 91234-5678", "Instagram", "2 veículos", "20/10/2026"],
+      ["Bruno Lima", "(19) 3333-4444", "Não informada", "1 veículo", "20/10/2026"],
     ]);
     expect(screen.getByRole("link", { name: "Ana Souza" })).toHaveAttribute(
       "href",

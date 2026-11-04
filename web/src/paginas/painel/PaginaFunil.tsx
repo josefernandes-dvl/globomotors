@@ -40,12 +40,12 @@ export function PaginaFunil() {
       ) : interesses.data.length === 0 ? (
         <CaixaVazia titulo="Nenhum interesse registrado">
           <p>
-            Registre o interesse de um cliente na página do carro ou do cliente. Cada interesse vira
-            um cartão aqui, e você avança a etapa conforme a negociação anda.
+            Registre o interesse de um cliente na página do veículo ou do cliente. Cada interesse
+            vira um cartão aqui, e você avança a etapa conforme a negociação anda.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Link to="/dashboard/cars" className="botao">
-              Ver carros
+              Ver veículos
             </Link>
             <Link to="/dashboard/customers" className="botao">
               Ver clientes

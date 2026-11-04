@@ -1,6 +1,7 @@
 import type { Banco } from "../db/banco.ts";
 import { criarRepositorioCarros } from "./carros.ts";
 import { criarRepositorioClientes } from "./clientes.ts";
+import { criarRepositorioDesejos } from "./desejos.ts";
 import { criarRepositorioFotos } from "./fotos.ts";
 import { criarRepositorioInteresses } from "./interesses.ts";
 import { criarRepositorioLoja } from "./loja.ts";
@@ -19,6 +20,7 @@ export function criarRepositorios(db: Banco) {
     fotos: criarRepositorioFotos(db),
     clientes: criarRepositorioClientes(db),
     interesses: criarRepositorioInteresses(db),
+    desejos: criarRepositorioDesejos(db),
     loja: criarRepositorioLoja(db),
   };
 }

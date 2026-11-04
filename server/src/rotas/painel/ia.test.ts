@@ -132,7 +132,7 @@ describe("POST /api/dashboard/ai/extract-car", () => {
     expect(resposta.status).toBe(400);
     expect(resposta.corpo.erro).toEqual({
       codigo: "requisicao_invalida",
-      mensagem: "Envie o texto ou as imagens do carro.",
+      mensagem: "Envie o texto ou as imagens do veículo.",
     });
     expect(lerCarro).not.toHaveBeenCalled();
   });

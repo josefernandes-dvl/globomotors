@@ -17,6 +17,7 @@ describe("esquemaCliente", () => {
       email: null,
       origem: null,
       observacoes: null,
+      desejos: [],
     });
   });
 
@@ -58,14 +59,38 @@ describe("esquemaCliente", () => {
       origem: "Origem inválida.",
     });
   });
+
+  it("guarda os interesses sem repetidos, ignorando maiúsculas e espaços", () => {
+    expect(
+      esquemaCliente.parse({
+        nome: "Ana",
+        telefone: "62999990000",
+        desejos: [" Onix automático ", "onix AUTOMÁTICO", "SUV diesel"],
+      }).desejos,
+    ).toEqual(["Onix automático", "SUV diesel"]);
+  });
+
+  it("recusa interesse vazio, longo demais e mais de 20 interesses", () => {
+    const cliente = { nome: "Ana", telefone: "62999990000" };
+    expect(erros({ ...cliente, desejos: ["Onix", " ", "x".repeat(81)] })).toEqual({
+      "desejos.1": "Interesse vazio.",
+      "desejos.2": "Cada interesse pode ter no máximo 80 caracteres.",
+    });
+    expect(
+      erros({ ...cliente, desejos: Array.from({ length: 21 }, (_, i) => `Modelo ${i}`) }),
+    ).toEqual({ desejos: "Informe no máximo 20 interesses." });
+    expect(erros({ ...cliente, desejos: "Onix" })).toEqual({
+      desejos: "Lista de interesses inválida.",
+    });
+  });
 });
 
 describe("esquemaNovoInteresse", () => {
-  it("exige ids de cliente e de carro", () => {
+  it("exige ids de cliente e de veículo", () => {
     const resultado = esquemaNovoInteresse.safeParse({ clienteId: "1", carroId: "" });
     expect(resultado.error?.issues.map((i) => i.message)).toEqual([
       "Escolha um cliente.",
-      "Escolha um carro.",
+      "Escolha um veículo.",
     ]);
   });
 });

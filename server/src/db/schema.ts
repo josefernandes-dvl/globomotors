@@ -20,6 +20,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -101,6 +102,7 @@ export const carros = pgTable("carros", {
   vendedorTelefone: text(),
   observacoesInternas: text(),
   vendidoEm: dataHora(),
+  publicadoEm: dataHora(),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 });
@@ -150,6 +152,23 @@ export const interesses = pgTable(
     unique("interesses_cliente_id_carro_id_unique").on(t.clienteId, t.carroId),
     index().on(t.carroId),
   ],
+);
+
+export const desejos = pgTable(
+  "desejos",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    clienteId: uuid()
+      .notNull()
+      .references(() => clientes.id, { onDelete: "cascade" }),
+    nome: text().notNull(),
+    anoMinimo: smallint(),
+    precoMaximo: integer(),
+    observacoes: text(),
+    ordem: integer().generatedAlwaysAsIdentity(),
+    criadoEm: criadoEm(),
+  },
+  (t) => [uniqueIndex("desejos_cliente_id_nome_unique").on(t.clienteId, sql`lower(${t.nome})`)],
 );
 
 export const loja = pgTable(

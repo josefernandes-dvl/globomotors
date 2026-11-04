@@ -46,15 +46,22 @@ const colunasDaVitrine = {
 };
 
 const traduzir = traduzirRestricoes({
-  carros_placa_unique: { campo: "placa", mensagem: "Já existe um carro com esta placa." },
-  carros_chassi_unique: { campo: "chassi", mensagem: "Já existe um carro com este chassi." },
-  carros_renavam_unique: { campo: "renavam", mensagem: "Já existe um carro com este Renavam." },
+  carros_placa_unique: { campo: "placa", mensagem: "Já existe um veículo com esta placa." },
+  carros_chassi_unique: { campo: "chassi", mensagem: "Já existe um veículo com este chassi." },
+  carros_renavam_unique: { campo: "renavam", mensagem: "Já existe um veículo com este Renavam." },
 });
 
-function dataDaVenda(status: StatusCarro) {
+function dataDaVenda(status: StatusCarro, agora: Date) {
   return status === "vendido"
-    ? sql`coalesce(${carros.vendidoEm}, ${new Date().toISOString()}::timestamptz)`
+    ? sql`coalesce(${carros.vendidoEm}, ${agora.toISOString()}::timestamptz)`
     : null;
+}
+
+function dataDaPublicacao(status: StatusCarro, agora: Date) {
+  return status === "disponivel"
+    ? sql`case when ${carros.status} = 'disponivel' then ${carros.publicadoEm}
+        else ${agora.toISOString()}::timestamptz end`
+    : undefined;
 }
 
 export function criarRepositorioCarros(db: Banco) {
@@ -70,34 +77,43 @@ export function criarRepositorioCarros(db: Banco) {
       return db.select(colunasDoPainel).from(carros).orderBy(desc(carros.criadoEm));
     },
 
-    async criar({ dataEntrada, ...dados }: CarroValidado) {
+    async criar({ dataEntrada, ...dados }: CarroValidado, agora: Date) {
       const linhas = await db
         .insert(carros)
         .values({
           ...dados,
           slug: gerarSlug([dados.marca, dados.modelo, dados.versao, dados.anoModelo]),
           dataEntrada: dataEntrada ?? hojeEmSaoPaulo(),
-          vendidoEm: dados.status === "vendido" ? new Date() : null,
+          vendidoEm: dados.status === "vendido" ? agora : null,
+          publicadoEm: dados.status === "disponivel" ? agora : null,
         })
         .returning()
         .catch(traduzir);
       return { ...primeiro(linhas), fotos: [] as string[], interessados: 0 };
     },
 
-    async atualizar(id: string, dados: CarroValidado) {
+    async atualizar(id: string, dados: CarroValidado, agora: Date) {
       const [carro] = await db
         .update(carros)
-        .set({ ...dados, vendidoEm: dataDaVenda(dados.status) })
+        .set({
+          ...dados,
+          vendidoEm: dataDaVenda(dados.status, agora),
+          publicadoEm: dataDaPublicacao(dados.status, agora),
+        })
         .where(eq(carros.id, id))
         .returning({ id: carros.id })
         .catch(traduzir);
       return carro ? buscarPainel(carro.id) : null;
     },
 
-    async alterarStatus(id: string, status: StatusCarro) {
+    async alterarStatus(id: string, status: StatusCarro, agora: Date) {
       const [carro] = await db
         .update(carros)
-        .set({ status, vendidoEm: dataDaVenda(status) })
+        .set({
+          status,
+          vendidoEm: dataDaVenda(status, agora),
+          publicadoEm: dataDaPublicacao(status, agora),
+        })
         .where(eq(carros.id, id))
         .returning({ id: carros.id });
       return carro ? buscarPainel(carro.id) : null;

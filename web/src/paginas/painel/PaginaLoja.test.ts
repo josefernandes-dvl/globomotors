@@ -61,7 +61,7 @@ describe("PaginaLoja", () => {
     expect(screen.getByLabelText("Instagram")).toHaveValue("@globomotors");
     expect(screen.getByRole("checkbox", { name: "Mostrar preços no catálogo" })).toBeChecked();
     expect(
-      screen.getByRole("checkbox", { name: "Mostrar carros vendidos no catálogo" }),
+      screen.getByRole("checkbox", { name: "Mostrar veículos vendidos no catálogo" }),
     ).not.toBeChecked();
 
     const link = screen.getByRole("link", { name: LINK });
@@ -166,7 +166,7 @@ describe("PaginaLoja", () => {
     });
     await usuario.click(screen.getByRole("checkbox", { name: "Mostrar preços no catálogo" }));
     await usuario.click(
-      screen.getByRole("checkbox", { name: "Mostrar carros vendidos no catálogo" }),
+      screen.getByRole("checkbox", { name: "Mostrar veículos vendidos no catálogo" }),
     );
     await usuario.click(screen.getByRole("button", SALVAR));
 
@@ -185,7 +185,7 @@ describe("PaginaLoja", () => {
     expect(screen.getByLabelText("Instagram")).toHaveValue("@auto.center");
     expect(screen.getByRole("checkbox", { name: "Mostrar preços no catálogo" })).not.toBeChecked();
     expect(
-      screen.getByRole("checkbox", { name: "Mostrar carros vendidos no catálogo" }),
+      screen.getByRole("checkbox", { name: "Mostrar veículos vendidos no catálogo" }),
     ).toBeChecked();
     expect(nomeNoTopo()).toMatch(/^Auto Center Campinas/);
     expect(queryClient.getQueryState(["vitrine", "loja"])?.isInvalidated).toBe(true);

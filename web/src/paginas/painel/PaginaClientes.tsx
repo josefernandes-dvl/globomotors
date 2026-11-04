@@ -110,7 +110,7 @@ export function PaginaClientes() {
                     {cliente.origem ? ROTULOS_ORIGEM_CLIENTE[cliente.origem] : "Não informada"}
                   </td>
                   <td className="px-4 py-3 tabular-nums">
-                    {plural(cliente.interesses, "carro", "carros")}
+                    {plural(cliente.interesses, "veículo", "veículos")}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap tabular-nums">
                     {formatarData(cliente.criadoEm)}

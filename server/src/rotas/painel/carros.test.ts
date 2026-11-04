@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { dataEmSaoPaulo, hojeEmSaoPaulo, type CarroPainel } from "@globomotors/shared";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -25,6 +26,7 @@ afterAll(async () => {
 
 interface RespostaCarro {
   carro: CarroPainel;
+  possiveisInteressados?: number;
 }
 
 function criar(corpo: unknown) {
@@ -106,7 +108,9 @@ describe("POST /api/dashboard/cars", () => {
       fotos: [],
       interessados: 0,
       vendidoEm: null,
+      publicadoEm: null,
     });
+    expect(resposta.corpo.possiveisInteressados).toBe(0);
     expect(carro.id).toMatch(UUID);
     expect(carro.slug).toMatch(/^fiat-uno-[0-9a-f]{6}$/);
     expect(new Date(carro.criadoEm).toISOString()).toBe(carro.criadoEm);
@@ -221,9 +225,9 @@ describe("POST /api/dashboard/cars", () => {
   });
 
   it.each([
-    ["placa", "Já existe um carro com esta placa."],
-    ["chassi", "Já existe um carro com este chassi."],
-    ["renavam", "Já existe um carro com este Renavam."],
+    ["placa", "Já existe um veículo com esta placa."],
+    ["chassi", "Já existe um veículo com este chassi."],
+    ["renavam", "Já existe um veículo com este Renavam."],
   ] as const)("recusa %s repetido com 409 no campo certo", async (campo, mensagem) => {
     const existente = await criarCarro();
     const resposta = await criar(carroDeTeste({ [campo]: existente[campo] }));
@@ -276,7 +280,7 @@ describe("GET /api/dashboard/cars/:id", () => {
 
     expect(resposta.status).toBe(404);
     expect(resposta.corpo).toEqual({
-      erro: { codigo: "nao_encontrado", mensagem: "Carro não encontrado." },
+      erro: { codigo: "nao_encontrado", mensagem: "Veículo não encontrado." },
     });
   });
 });
@@ -419,6 +423,82 @@ describe("PATCH /api/dashboard/cars/:id/status", () => {
 
   it("responde 404 para carro que não existe", async () => {
     expect((await alterarStatus(ID_INEXISTENTE, "vendido")).status).toBe(404);
+  });
+});
+
+describe("entrada no catálogo e possíveis interessados", () => {
+  async function clienteQueProcura(...desejos: string[]) {
+    const resposta = await api.requisitar<{ cliente: { id: string } }>(
+      "POST",
+      "/dashboard/customers",
+      { corpo: clienteDeTeste({ desejos }), cookie },
+    );
+    expect(resposta.status).toBe(201);
+    return resposta.corpo.cliente.id;
+  }
+
+  function modeloNovo() {
+    return `Modelo${randomUUID().slice(0, 6)}`;
+  }
+
+  it("guarda a publicação de quem entra disponível e conta cada cliente compatível uma vez", async () => {
+    const modelo = modeloNovo();
+    await clienteQueProcura(modelo, `${modelo} automático`);
+    await clienteQueProcura(`${modelo} prata`);
+    await clienteQueProcura(`${modelo} diesel`);
+    const antes = Date.now();
+
+    const resposta = await criar(carroDeTeste({ modelo }));
+
+    expect(resposta.status).toBe(201);
+    expect(resposta.corpo.possiveisInteressados).toBe(2);
+    const { publicadoEm } = resposta.corpo.carro;
+    expect(new Date(publicadoEm ?? "").toISOString()).toBe(publicadoEm);
+    expect(new Date(publicadoEm ?? "").getTime()).toBeGreaterThanOrEqual(antes);
+  });
+
+  it("conta de novo só quando o veículo volta ao catálogo", async () => {
+    const modelo = modeloNovo();
+    await clienteQueProcura(modelo);
+    const carro = await criarCarro({ modelo, status: "rascunho" });
+    expect(carro.publicadoEm).toBeNull();
+
+    const publicado = await alterarStatus(carro.id, "disponivel");
+    expect(publicado.corpo.possiveisInteressados).toBe(1);
+    const { publicadoEm } = publicado.corpo.carro;
+    expect(publicadoEm).not.toBeNull();
+
+    const editado = await api.requisitar<RespostaCarro>("PUT", `/dashboard/cars/${carro.id}`, {
+      corpo: carroDeTeste({
+        modelo,
+        placa: carro.placa,
+        chassi: carro.chassi,
+        renavam: carro.renavam,
+        km: 1_000,
+      }),
+      cookie,
+    });
+    expect(editado.corpo).toMatchObject({ carro: { publicadoEm }, possiveisInteressados: 0 });
+
+    const reservado = await alterarStatus(carro.id, "reservado");
+    expect(reservado.corpo).toMatchObject({ carro: { publicadoEm }, possiveisInteressados: 0 });
+
+    const deVolta = await alterarStatus(carro.id, "disponivel");
+    expect(deVolta.corpo.possiveisInteressados).toBe(1);
+    expect(deVolta.corpo.carro.publicadoEm).not.toBe(publicadoEm);
+  });
+
+  it("não conta o cliente que já está no funil do veículo", async () => {
+    const modelo = modeloNovo();
+    const clienteId = await clienteQueProcura(modelo);
+    await clienteQueProcura(modelo);
+    const carro = await criarCarro({ modelo, status: "reservado" });
+    await api.requisitar("POST", "/dashboard/interests", {
+      corpo: { clienteId, carroId: carro.id },
+      cookie,
+    });
+
+    expect((await alterarStatus(carro.id, "disponivel")).corpo.possiveisInteressados).toBe(1);
   });
 });
 

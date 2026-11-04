@@ -4,6 +4,7 @@ import { exigirAutenticacao } from "../../middlewares/autenticacao.ts";
 import type { Repositorios } from "../../repositorios/index.ts";
 import { rotasCarros } from "./carros.ts";
 import { rotasClientes } from "./clientes.ts";
+import { rotasDesejos } from "./desejos.ts";
 import { rotasFotos } from "./fotos.ts";
 import { rotasIa } from "./ia.ts";
 import { rotasInteresses } from "./interesses.ts";
@@ -17,6 +18,7 @@ export function rotasPainel(repositorios: Repositorios, ia: Ia | null) {
   rotas.use(rotasFotos(repositorios));
   rotas.use("/customers", rotasClientes(repositorios));
   rotas.use("/interests", rotasInteresses(repositorios));
+  rotas.use("/wishes", rotasDesejos(repositorios));
   rotas.use("/store", rotasLoja(repositorios));
   rotas.use("/ai", rotasIa(ia));
 

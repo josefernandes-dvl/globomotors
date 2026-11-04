@@ -8,7 +8,7 @@ import { paraInteresse } from "./mapeadores.ts";
 const INTERESSE_NAO_ENCONTRADO = "Interesse não encontrado.";
 
 const esquemaFiltro = z.object({
-  carId: z.uuid({ error: "Carro inválido." }).optional(),
+  carId: z.uuid({ error: "Veículo inválido." }).optional(),
   customerId: z.uuid({ error: "Cliente inválido." }).optional(),
 });
 

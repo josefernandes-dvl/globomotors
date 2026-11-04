@@ -60,6 +60,12 @@ function alteracoes(chaves: string[]) {
   return chaves.filter((chave) => !chave.startsWith("GET"));
 }
 
+function interessesNaTela() {
+  return within(screen.getByRole("group", { name: "Interesses" }))
+    .queryAllByRole("listitem")
+    .map((item) => item.textContent);
+}
+
 async function preencher(usuario: UserEvent, campos: Record<string, string>) {
   for (const [rotulo, texto] of Object.entries(campos)) {
     await usuario.clear(screen.getByLabelText(rotulo));
@@ -68,8 +74,8 @@ async function preencher(usuario: UserEvent, campos: Record<string, string>) {
 }
 
 async function abrirInteresses() {
-  const regiao = await screen.findByRole("region", { name: "Carros de interesse" });
-  const escolha = await within(regiao).findByLabelText("Carro");
+  const regiao = await screen.findByRole("region", { name: "Veículos de interesse" });
+  const escolha = await within(regiao).findByLabelText("Veículo");
   await waitFor(() => expect(escolha).toBeEnabled());
   return { regiao, escolha };
 }
@@ -102,9 +108,13 @@ describe("PaginaCliente", () => {
         "Visita à loja",
         "Outro",
       ]);
+      expect(interessesNaTela()).toEqual([]);
+      expect(screen.getByLabelText("Novo interesse")).toHaveAccessibleDescription(
+        "Tipos de veículo que o cliente procura, como “SUV automático” ou “Onix 2020”. Quando um veículo compatível entrar no catálogo, ele aparece em Interesses.",
+      );
       expect(
         screen.getByText(
-          "Depois de cadastrar o cliente, você pode registrar os carros de interesse dele.",
+          "Depois de cadastrar o cliente, você pode registrar os veículos de interesse dele.",
         ),
       ).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "Excluir cliente" })).not.toBeInTheDocument();
@@ -144,6 +154,7 @@ describe("PaginaCliente", () => {
         email: "carla@exemplo.com",
         origem: "indicacao",
         observacoes: "Quer SUV até R$ 120 mil",
+        desejos: ["SUV automático", "Compass"],
         criadoEm: "2026-10-30T15:00:00.000Z",
         atualizadoEm: "2026-10-30T15:00:00.000Z",
       });
@@ -165,6 +176,11 @@ describe("PaginaCliente", () => {
         Observações: "Quer SUV até R$ 120 mil",
       });
       await usuario.selectOptions(screen.getByLabelText("Como conheceu a loja"), "Indicação");
+      const novoInteresse = screen.getByLabelText("Novo interesse");
+      await usuario.type(novoInteresse, "  SUV automático {Enter}");
+      await usuario.type(novoInteresse, "Compass");
+      await usuario.click(screen.getByRole("button", { name: "Adicionar" }));
+      expect(interessesNaTela()).toEqual(["SUV automático", "Compass"]);
       await usuario.click(screen.getByRole("button", { name: "Cadastrar cliente" }));
 
       expect(await screen.findByRole("button", { name: "Salvando…" })).toBeDisabled();
@@ -175,6 +191,7 @@ describe("PaginaCliente", () => {
           email: "carla@exemplo.com",
           origem: "indicacao",
           observacoes: "Quer SUV até R$ 120 mil",
+          desejos: ["SUV automático", "Compass"],
         },
       ]);
 
@@ -188,8 +205,9 @@ describe("PaginaCliente", () => {
       expect(router.state.historyAction).toBe("REPLACE");
       expect(screen.getByLabelText("Telefone (WhatsApp) *")).toHaveValue("(62) 99999-0000");
       expect(screen.getByText("Cadastrado em 30/10/2026")).toBeInTheDocument();
+      expect(interessesNaTela()).toEqual(["SUV automático", "Compass"]);
       expect(
-        await screen.findByText("Este cliente ainda não tem carro de interesse."),
+        await screen.findByText("Este cliente ainda não tem veículo de interesse."),
       ).toBeInTheDocument();
       expect(alteracoes(api.chaves())).toEqual(["POST /api/dashboard/customers"]);
     });
@@ -254,7 +272,7 @@ describe("PaginaCliente", () => {
       expect(within(regiao).getByText("1.0 Turbo LTZ · Disponível")).toBeInTheDocument();
       expect(within(regiao).getByRole("combobox", ETAPA_DA_ANA)).toHaveTextContent("Novo");
       expect(opcoes(escolha)).toEqual([
-        "Escolha um carro",
+        "Escolha um veículo",
         "Fiat Pulse Drive 1.3 2022/2023 · Reservado",
         "Honda Fit 2019 · Rascunho",
       ]);
@@ -297,6 +315,7 @@ describe("PaginaCliente", () => {
           email: null,
           origem: null,
           observacoes: null,
+          desejos: [],
         },
       ]);
       expect(
@@ -311,6 +330,57 @@ describe("PaginaCliente", () => {
       });
       expect(router.state.location.pathname).toBe("/dashboard/customers/k1");
       expect(alteracoes(api.chaves())).toEqual(["PUT /api/dashboard/customers/k1"]);
+    });
+
+    it("inclui e remove interesses, recusa o repetido e salva a lista junto com o cliente", async () => {
+      const usuario = userEvent.setup();
+      const salvo = cliente({ desejos: ["SUV automático", "Corolla"] });
+      let tentativas = 0;
+      const api = simularCliente({
+        "GET /api/dashboard/customers/k1": {
+          cliente: cliente({ desejos: ["SUV automático", "Onix 2020"] }),
+        },
+        "PUT /api/dashboard/customers/k1": () => {
+          tentativas += 1;
+          if (tentativas === 1) {
+            return respostaDeErro(400, "validacao", "Confira os campos destacados.", [
+              { campo: "desejos.1", mensagem: "Cada interesse pode ter no máximo 80 caracteres." },
+            ]);
+          }
+          api.rotas["GET /api/dashboard/customers/k1"] = { cliente: salvo };
+          return { cliente: salvo };
+        },
+      });
+      renderizarRota("/dashboard/customers/k1");
+      await screen.findByRole("heading", { level: 1, name: "Ana Souza" });
+      expect(interessesNaTela()).toEqual(["SUV automático", "Onix 2020"]);
+
+      await usuario.click(screen.getByRole("button", { name: "Remover Onix 2020" }));
+      const novoInteresse = screen.getByLabelText("Novo interesse");
+      await usuario.type(novoInteresse, "suv AUTOMÁTICO{Enter}");
+      expect(novoInteresse).toHaveAccessibleDescription("“suv AUTOMÁTICO” já está na lista.");
+      await usuario.clear(novoInteresse);
+      await usuario.type(novoInteresse, "Corolla{Enter}");
+      expect(novoInteresse).toHaveValue("");
+      expect(novoInteresse).toHaveFocus();
+      expect(interessesNaTela()).toEqual(["SUV automático", "Corolla"]);
+
+      await usuario.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Confira os campos destacados.");
+      expect(novoInteresse).toHaveAccessibleDescription(
+        "Cada interesse pode ter no máximo 80 caracteres.",
+      );
+
+      await usuario.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+      expect(await screen.findByText("Alterações salvas.")).toHaveAttribute("role", "status");
+      expect(api.corpos("PUT /api/dashboard/customers/k1")).toEqual([
+        expect.objectContaining({ desejos: ["SUV automático", "Corolla"] }),
+        expect.objectContaining({ desejos: ["SUV automático", "Corolla"] }),
+      ]);
+      expect(interessesNaTela()).toEqual(["SUV automático", "Corolla"]);
+      expect(novoInteresse).not.toHaveAttribute("aria-invalid");
     });
 
     it("exclui o cliente só depois da confirmação, volta para a lista e não reabre a ficha excluída", async () => {
@@ -520,7 +590,7 @@ describe("PaginaCliente", () => {
         "/dashboard/cars/c2",
       );
       await waitFor(() =>
-        expect(opcoes(escolha)).toEqual(["Escolha um carro", "Honda Fit 2019 · Rascunho"]),
+        expect(opcoes(escolha)).toEqual(["Escolha um veículo", "Honda Fit 2019 · Rascunho"]),
       );
       expect(escolha).toHaveValue("");
       expect(registrar).toBeDisabled();
@@ -650,11 +720,11 @@ describe("PaginaCliente", () => {
 
       expect(await screen.findByText("Interesse removido.")).toHaveAttribute("role", "status");
       expect(
-        await within(regiao).findByText("Este cliente ainda não tem carro de interesse."),
+        await within(regiao).findByText("Este cliente ainda não tem veículo de interesse."),
       ).toBeInTheDocument();
       await waitFor(() =>
         expect(opcoes(escolha)).toEqual([
-          "Escolha um carro",
+          "Escolha um veículo",
           "Chevrolet Onix 1.0 Turbo LTZ 2020/2021 · Disponível",
           "Fiat Pulse Drive 1.3 2022/2023 · Reservado",
           "Honda Fit 2019 · Rascunho",
@@ -674,9 +744,9 @@ describe("PaginaCliente", () => {
 
       renderizarRota("/dashboard/customers/k1");
 
-      const regiao = await screen.findByRole("region", { name: "Carros de interesse" });
+      const regiao = await screen.findByRole("region", { name: "Veículos de interesse" });
       expect(await within(regiao).findByRole("alert")).toHaveTextContent("Erro interno.");
-      expect(within(regiao).queryByLabelText("Carro")).not.toBeInTheDocument();
+      expect(within(regiao).queryByLabelText("Veículo")).not.toBeInTheDocument();
       expect(screen.getByLabelText("Nome *")).toHaveValue("Ana Souza");
     });
   });

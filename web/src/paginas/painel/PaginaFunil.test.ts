@@ -355,10 +355,10 @@ describe("PaginaFunil", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Registre o interesse de um cliente na página do carro ou do cliente. Cada interesse vira um cartão aqui, e você avança a etapa conforme a negociação anda.",
+        "Registre o interesse de um cliente na página do veículo ou do cliente. Cada interesse vira um cartão aqui, e você avança a etapa conforme a negociação anda.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver carros" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Ver veículos" })).toHaveAttribute(
       "href",
       "/dashboard/cars",
     );

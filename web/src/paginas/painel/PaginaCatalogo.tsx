@@ -3,6 +3,7 @@ import {
   ROTULOS_STATUS_CARRO,
   STATUS_CARRO,
   type CarroPainel,
+  type CarroSalvo,
   type StatusCarro,
 } from "@globomotors/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +25,7 @@ import {
 } from "../../lib/catalogo.ts";
 import { fichaDoCarro, linkDoCarro } from "../../lib/compartilhamento.ts";
 import {
+  avisoDeInteressados,
   formatarAnos,
   formatarDinheiro,
   formatarNumero,
@@ -69,7 +71,7 @@ export function PaginaCatalogo() {
 
   const mudarStatus = useMutation({
     mutationFn: ({ id, status }: { id: string; status: StatusCarro }) =>
-      api.patch<{ carro: CarroPainel }>(`/dashboard/cars/${id}/status`, { status }),
+      api.patch<CarroSalvo>(`/dashboard/cars/${id}/status`, { status }),
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: CHAVE_CARROS });
       const anteriores = queryClient.getQueryData(CHAVE_CARROS);
@@ -82,7 +84,10 @@ export function PaginaCatalogo() {
       queryClient.setQueryData(CHAVE_CARROS, contexto?.anteriores);
       avisar(mensagemDeErro(erro), "erro");
     },
-    onSuccess: ({ carro }) => avisar(`Status alterado para ${ROTULOS_STATUS_CARRO[carro.status]}.`),
+    onSuccess: ({ carro, possiveisInteressados }) => {
+      avisar(`Status alterado para ${ROTULOS_STATUS_CARRO[carro.status]}.`);
+      if (possiveisInteressados > 0) avisar(avisoDeInteressados(possiveisInteressados, carro));
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: CHAVE_PAINEL }),
   });
 
@@ -90,7 +95,7 @@ export function PaginaCatalogo() {
     mutationFn: (id: string) => api.delete(`/dashboard/cars/${id}`),
     onSuccess: (_resposta, id) => {
       queryClient.setQueryData(CHAVE_CARROS, (lista) => lista?.filter((carro) => carro.id !== id));
-      avisar("Carro excluído do catálogo.");
+      avisar("Veículo excluído do catálogo.");
     },
     onError: (erro) => avisar(mensagemDeErro(erro), "erro"),
     onSettled: () => queryClient.invalidateQueries({ queryKey: CHAVE_PAINEL }),
@@ -140,19 +145,19 @@ export function PaginaCatalogo() {
     conteudo = (
       <CaixaVazia titulo="Seu catálogo está vazio">
         <p>
-          Cadastre o primeiro carro. Ele entra como rascunho e só vai para o catálogo quando você
+          Cadastre o primeiro veículo. Ele entra como rascunho e só vai para o catálogo quando você
           publicar.
         </p>
         <Link to="/dashboard/cars/new" className="botao botao-primario mt-4">
           <Icone nome="mais" />
-          Adicionar carro
+          Adicionar veículo
         </Link>
       </CaixaVazia>
     );
   } else if (encontrados.length === 0) {
     conteudo = (
       <CaixaVazia titulo="Nada encontrado">
-        <p>Nenhum carro corresponde aos filtros.</p>
+        <p>Nenhum veículo corresponde aos filtros.</p>
         <button
           type="button"
           onClick={() => {
@@ -185,14 +190,14 @@ export function PaginaCatalogo() {
 
   return (
     <PaginaDoPainel
-      titulo="Carros"
+      titulo="Veículos"
       acoes={
         <>
           <button
             type="button"
             onClick={() => pdf.mutate()}
             disabled={pdf.isPending}
-            title="Catálogo em PDF com os carros publicados"
+            title="Catálogo em PDF com os veículos publicados"
             className="botao"
           >
             <Icone nome="baixar" />
@@ -200,7 +205,7 @@ export function PaginaCatalogo() {
           </button>
           <Link to="/dashboard/cars/new" className="botao botao-primario">
             <Icone nome="mais" />
-            Adicionar carro
+            Adicionar veículo
           </Link>
         </>
       }
@@ -388,7 +393,7 @@ function CartaoDoCarro({ carro, onStatus, onFicha, onExcluir }: PropsCartao) {
             <span className="max-sm:sr-only">Ficha</span>
           </button>
           <BotaoConfirmar
-            pergunta="Excluir este carro?"
+            pergunta="Excluir este veículo?"
             onConfirmar={onExcluir}
             rotulo="Excluir"
             className="botao botao-pequeno flex-1 text-perigo sm:flex-none"

@@ -1,4 +1,4 @@
-import type { CarroPublico, StatusCarro } from "@globomotors/shared";
+import { normalizarTexto, type CarroPublico, type StatusCarro } from "@globomotors/shared";
 import { formatarAnos } from "./formatacao.ts";
 
 export const ROTULOS_ORDEM = {
@@ -57,20 +57,13 @@ interface CarroDoCatalogo {
   status: StatusCarro;
 }
 
-function normalizar(texto: string) {
-  return texto
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
-}
-
 export function combinaComBusca(
   carro: CarroDoCatalogo,
   busca: string,
   ...extras: (string | null)[]
 ) {
-  const termos = normalizar(busca).split(/\s+/).filter(Boolean);
-  const texto = normalizar(
+  const termos = normalizarTexto(busca).split(/\s+/).filter(Boolean);
+  const texto = normalizarTexto(
     [
       carro.marca,
       carro.modelo,

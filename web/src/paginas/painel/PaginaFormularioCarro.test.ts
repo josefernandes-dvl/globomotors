@@ -115,9 +115,9 @@ describe("PaginaFormularioCarro", () => {
       const { router } = renderizarRota("/dashboard/cars/new");
 
       expect(
-        await screen.findByRole("heading", { level: 1, name: "Novo carro" }),
+        await screen.findByRole("heading", { level: 1, name: "Novo veículo" }),
       ).toBeInTheDocument();
-      await waitFor(() => expect(document.title).toBe("Novo carro · Painel"));
+      await waitFor(() => expect(document.title).toBe("Novo veículo · Painel"));
       expect(
         screen.getAllByRole("heading", { level: 2 }).map((titulo) => titulo.textContent),
       ).toEqual(["Preencher com IA", "Fotos", "Veículo", "Anúncio", "Só para você"]);
@@ -156,7 +156,7 @@ describe("PaginaFormularioCarro", () => {
       expect(screen.queryByRole("link", { name: "Ver no catálogo" })).not.toBeInTheDocument();
       expect(
         screen.getByText(
-          "Depois de salvar o carro, você pode registrar os clientes interessados nele.",
+          "Depois de salvar o veículo, você pode registrar os clientes interessados nele.",
         ),
       ).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Adicionar ao catálogo" })).toBeEnabled();
@@ -188,7 +188,9 @@ describe("PaginaFormularioCarro", () => {
 
       await usuario.click(screen.getByRole("link", { name: "Cancelar" }));
 
-      expect(await screen.findByRole("heading", { level: 1, name: "Carros" })).toBeInTheDocument();
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "Veículos" }),
+      ).toBeInTheDocument();
       expect(router.state.location.pathname).toBe("/dashboard/cars");
       expect(alteracoes(api.chaves())).toEqual([]);
     });
@@ -384,11 +386,13 @@ describe("PaginaFormularioCarro", () => {
 
       responder({ carro: CRIADO });
 
-      expect(await screen.findByText("Carro adicionado ao catálogo.")).toHaveAttribute(
+      expect(await screen.findByText("Veículo adicionado ao catálogo.")).toHaveAttribute(
         "role",
         "status",
       );
-      expect(await screen.findByRole("heading", { level: 1, name: "Carros" })).toBeInTheDocument();
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "Veículos" }),
+      ).toBeInTheDocument();
       expect(router.state.location.pathname).toBe("/dashboard/cars");
       expect(alteracoes(api.chaves())).toEqual(["POST /api/dashboard/cars"]);
     });
@@ -435,7 +439,7 @@ describe("PaginaFormularioCarro", () => {
       await preencher(usuario, { "Marca *": "Fiat", "Modelo *": "Pulse" });
       await usuario.click(screen.getByRole("button", { name: "Adicionar ao catálogo" }));
 
-      expect(await screen.findByText("Carro adicionado ao catálogo.")).toBeInTheDocument();
+      expect(await screen.findByText("Veículo adicionado ao catálogo.")).toBeInTheDocument();
       expect(alteracoes(api.chaves())).toEqual([
         "POST /api/dashboard/cars",
         "POST /api/dashboard/cars/c9/photos",
@@ -444,7 +448,9 @@ describe("PaginaFormularioCarro", () => {
       expect(
         api.corpos("POST /api/dashboard/cars/c9/photos").map((corpo) => (corpo as File).name),
       ).toEqual(["reduzida-c.webp", "reduzida-b.png"]);
-      expect(await screen.findByRole("heading", { level: 1, name: "Carros" })).toBeInTheDocument();
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "Veículos" }),
+      ).toBeInTheDocument();
       expect(router.state.location.pathname).toBe("/dashboard/cars");
       expect(revogar).toHaveBeenCalledWith(b);
       expect(revogar).toHaveBeenCalledWith(c);
@@ -490,7 +496,7 @@ describe("PaginaFormularioCarro", () => {
 
       await usuario.upload(entradaDeFotos(), variasFotos("escolhida", 6));
 
-      expect(await screen.findByText("Cada carro pode ter no máximo 20 fotos.")).toHaveAttribute(
+      expect(await screen.findByText("Cada veículo pode ter no máximo 20 fotos.")).toHaveAttribute(
         "role",
         "alert",
       );
@@ -598,11 +604,11 @@ describe("PaginaFormularioCarro", () => {
 
       expect(
         await screen.findByText(
-          "O carro foi salvo, mas houve um problema com as fotos: Envie uma imagem JPG, PNG ou WebP.",
+          "O veículo foi salvo, mas houve um problema com as fotos: Envie uma imagem JPG, PNG ou WebP.",
         ),
       ).toHaveAttribute("role", "alert");
       expect(await screen.findByText("1 de 20")).toBeInTheDocument();
-      expect(screen.getByRole("heading", { level: 1, name: "Editar carro" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1, name: "Editar veículo" })).toBeInTheDocument();
       expect(router.state.location.pathname).toBe("/dashboard/cars/c9");
       expect(router.state.historyAction).toBe("REPLACE");
       expect(fotosNaTela()).toEqual(["/api/dashboard/photos/n1"]);
@@ -635,7 +641,7 @@ describe("PaginaFormularioCarro", () => {
 
       expect(
         await screen.findByText(
-          "O carro foi salvo, mas houve um problema com as fotos: Erro interno.",
+          "O veículo foi salvo, mas houve um problema com as fotos: Erro interno.",
         ),
       ).toHaveAttribute("role", "alert");
       expect(await screen.findByText("2 de 20")).toBeInTheDocument();
@@ -695,7 +701,7 @@ describe("PaginaFormularioCarro", () => {
       const catalogo = screen.getByRole("link", { name: "Ver no catálogo" });
       expect(catalogo).toHaveAttribute("href", "/catalogo/chevrolet-onix-2021-c1");
       expect(catalogo).toHaveAttribute("target", "_blank");
-      await waitFor(() => expect(document.title).toBe("Editar carro · Painel"));
+      await waitFor(() => expect(document.title).toBe("Editar veículo · Painel"));
       expect(screen.getByRole("button", { name: "Salvar alterações" })).toBeEnabled();
 
       const interessados = screen.getByRole("region", { name: "Clientes interessados" });
@@ -732,7 +738,9 @@ describe("PaginaFormularioCarro", () => {
       await usuario.click(screen.getByRole("button", { name: "Salvar alterações" }));
 
       expect(await screen.findByText("Alterações salvas.")).toHaveAttribute("role", "status");
-      expect(await screen.findByRole("heading", { level: 1, name: "Carros" })).toBeInTheDocument();
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "Veículos" }),
+      ).toBeInTheDocument();
       expect(router.state.location.pathname).toBe("/dashboard/cars");
       expect(alteracoes(api.chaves())).toEqual(["PUT /api/dashboard/cars/c1"]);
       expect(api.corpos("PUT /api/dashboard/cars/c1")).toEqual([
@@ -771,14 +779,32 @@ describe("PaginaFormularioCarro", () => {
       ]);
     });
 
+    it("avisa quantos clientes têm possível interesse no veículo salvo", async () => {
+      const usuario = userEvent.setup();
+      simularFormulario({
+        "PUT /api/dashboard/cars/c1": { carro: ONIX, possiveisInteressados: 1 },
+      });
+      renderizarRota("/dashboard/cars/c1");
+      await screen.findByLabelText("Marca *");
+
+      await usuario.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+      expect(
+        await screen.findByText(
+          "1 cliente tem possível interesse no veículo Chevrolet Onix. Veja em Interesses.",
+        ),
+      ).toHaveAttribute("role", "status");
+      expect(screen.getByText("Alterações salvas.")).toHaveAttribute("role", "status");
+    });
+
     it("marca os campos recusados pela API e limpa as marcas na tentativa seguinte", async () => {
       const usuario = userEvent.setup();
       const api = simularFormulario({
         "PUT /api/dashboard/cars/c1": respostaDeErro(
           409,
           "conflito",
-          "Já existe um carro com esta placa.",
-          [{ campo: "placa", mensagem: "Já existe um carro com esta placa." }],
+          "Já existe um veículo com esta placa.",
+          [{ campo: "placa", mensagem: "Já existe um veículo com esta placa." }],
         ),
       });
       renderizarRota("/dashboard/cars/c1");
@@ -795,10 +821,10 @@ describe("PaginaFormularioCarro", () => {
       await salvar();
 
       expect(await screen.findByRole("alert")).toHaveTextContent(
-        "Já existe um carro com esta placa.",
+        "Já existe um veículo com esta placa.",
       );
       expect(placa).toHaveAttribute("aria-invalid", "true");
-      expect(placa).toHaveAccessibleDescription("Já existe um carro com esta placa.");
+      expect(placa).toHaveAccessibleDescription("Já existe um veículo com esta placa.");
 
       api.rotas["PUT /api/dashboard/cars/c1"] = respostaDeErro(
         400,
@@ -838,20 +864,22 @@ describe("PaginaFormularioCarro", () => {
         "GET /api/dashboard/cars/c1": respostaDeErro(
           404,
           "nao_encontrado",
-          "Carro não encontrado.",
+          "Veículo não encontrado.",
         ),
       });
       const { router } = renderizarRota("/dashboard/cars/c1");
 
       expect(
-        await screen.findByRole("heading", { name: "Carro não encontrado" }),
+        await screen.findByRole("heading", { name: "Veículo não encontrado" }),
       ).toBeInTheDocument();
       expect(screen.getByText("Ele pode ter sido excluído.")).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "Tentar de novo" })).not.toBeInTheDocument();
 
       await usuario.click(screen.getByRole("link", { name: "Voltar ao catálogo" }));
 
-      expect(await screen.findByRole("heading", { level: 1, name: "Carros" })).toBeInTheDocument();
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "Veículos" }),
+      ).toBeInTheDocument();
       expect(router.state.location.pathname).toBe("/dashboard/cars");
     });
 
@@ -864,13 +892,13 @@ describe("PaginaFormularioCarro", () => {
       api.rotas["GET /api/dashboard/cars/c1"] = respostaDeErro(
         404,
         "nao_encontrado",
-        "Carro não encontrado.",
+        "Veículo não encontrado.",
       );
 
       fireEvent(window, new Event("visibilitychange"));
 
       expect(
-        await screen.findByRole("heading", { name: "Carro não encontrado" }),
+        await screen.findByRole("heading", { name: "Veículo não encontrado" }),
       ).toBeInTheDocument();
       expect(screen.queryByLabelText("Marca *")).not.toBeInTheDocument();
     });
@@ -887,7 +915,7 @@ describe("PaginaFormularioCarro", () => {
       renderizarRota("/dashboard/cars/c1");
 
       expect(
-        await screen.findByRole("heading", { level: 1, name: "Editar carro" }),
+        await screen.findByRole("heading", { level: 1, name: "Editar veículo" }),
       ).toBeInTheDocument();
       expect(screen.getByRole("status")).toHaveTextContent("Carregando…");
 
@@ -1075,7 +1103,7 @@ describe("PaginaFormularioCarro", () => {
       const documento = foto("documento.png", "image/png");
 
       await preencher(usuario, {
-        "Texto sobre o carro": "  Onix LTZ 2020/2021, 42 mil km, R$ 89.900  ",
+        "Texto sobre o veículo": "  Onix LTZ 2020/2021, 42 mil km, R$ 89.900  ",
       });
       await usuario.upload(entradaDaIa(), [documento, foto("painel.jpg")]);
       expect(imagensDaIa()).toEqual(["documento.png", "painel.jpg"]);
@@ -1121,12 +1149,12 @@ describe("PaginaFormularioCarro", () => {
       await pedirLeitura(usuario);
       expect(screen.getByRole("alert")).toHaveTextContent("Cole um texto ou escolha uma imagem.");
 
-      await preencher(usuario, { "Texto sobre o carro": "a".repeat(6001) });
+      await preencher(usuario, { "Texto sobre o veículo": "a".repeat(6001) });
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
       await pedirLeitura(usuario);
       expect(screen.getByRole("alert")).toHaveTextContent("Use no máximo 6000 caracteres.");
 
-      await preencher(usuario, { "Texto sobre o carro": "" });
+      await preencher(usuario, { "Texto sobre o veículo": "" });
       await usuario.upload(entradaDaIa(), variasFotos("doc", 3));
       await usuario.upload(entradaDaIa(), variasFotos("placa", 2));
       expect(imagensDaIa()).toEqual([
@@ -1176,12 +1204,12 @@ describe("PaginaFormularioCarro", () => {
         renderizarRota("/dashboard/cars/new");
         await screen.findByLabelText("Marca *");
 
-        await preencher(usuario, { "Texto sobre o carro": "Onix 2021" });
+        await preencher(usuario, { "Texto sobre o veículo": "Onix 2021" });
         await pedirLeitura(usuario);
 
         expect(await screen.findByRole("alert")).toHaveTextContent(esperada);
         expect(screen.getByLabelText("Marca *")).toHaveValue("");
-        expect(screen.getByLabelText("Texto sobre o carro")).toHaveValue("Onix 2021");
+        expect(screen.getByLabelText("Texto sobre o veículo")).toHaveValue("Onix 2021");
         expect(screen.getByRole("button", { name: "Preencher com IA" })).toBeEnabled();
       },
     );
@@ -1192,11 +1220,11 @@ describe("PaginaFormularioCarro", () => {
       renderizarRota("/dashboard/cars/new");
       await screen.findByLabelText("Marca *");
 
-      await preencher(usuario, { "Texto sobre o carro": "Bom dia" });
+      await preencher(usuario, { "Texto sobre o veículo": "Bom dia" });
       await pedirLeitura(usuario);
 
       expect(await screen.findByRole("alert")).toHaveTextContent(
-        "A IA não achou dados do carro. Escreva mais detalhes ou escolha outra imagem.",
+        "A IA não achou dados do veículo. Escreva mais detalhes ou escolha outra imagem.",
       );
       expect(screen.queryByText(/^A IA preencheu/)).not.toBeInTheDocument();
 
@@ -1225,7 +1253,7 @@ describe("PaginaFormularioCarro", () => {
       renderizarRota("/dashboard/cars/new");
       await screen.findByLabelText("Marca *");
 
-      await preencher(usuario, { "Texto sobre o carro": "Fiat Pulse 2023" });
+      await preencher(usuario, { "Texto sobre o veículo": "Fiat Pulse 2023" });
       await pedirLeitura(usuario);
 
       expect(await screen.findByRole("button", { name: "Lendo…" })).toBeDisabled();
@@ -1252,7 +1280,7 @@ describe("PaginaFormularioCarro", () => {
       renderizarRota("/dashboard/cars/c1");
       await screen.findByLabelText("Marca *");
 
-      await preencher(usuario, { "Texto sobre o carro": "Agora com 51 mil km e teto solar" });
+      await preencher(usuario, { "Texto sobre o veículo": "Agora com 51 mil km e teto solar" });
       await pedirLeitura(usuario);
 
       expect(

@@ -304,7 +304,7 @@ describe("PaginaCarro", () => {
 
   it("avisa quando o carro não está mais na vitrine", async () => {
     simularCarro({
-      [ROTA_DO_CARRO]: respostaDeErro(404, "nao_encontrado", "Carro não encontrado."),
+      [ROTA_DO_CARRO]: respostaDeErro(404, "nao_encontrado", "Veículo não encontrado."),
     });
 
     renderizarRota(CAMINHO);

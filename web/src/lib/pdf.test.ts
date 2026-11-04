@@ -237,7 +237,7 @@ describe("gerarCatalogoPdf", () => {
     });
 
     await expect(gerarCatalogoPdf()).rejects.toThrow(
-      "Não há carros publicados no catálogo para exportar.",
+      "Não há veículos publicados no catálogo para exportar.",
     );
   });
 

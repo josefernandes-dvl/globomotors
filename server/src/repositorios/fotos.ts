@@ -36,7 +36,7 @@ export function criarRepositorioFotos(db: Banco) {
           throw new ErroHttp(
             409,
             CODIGOS_ERRO.CONFLITO,
-            `Cada carro pode ter no máximo ${MAX_FOTOS_POR_CARRO} fotos.`,
+            `Cada veículo pode ter no máximo ${MAX_FOTOS_POR_CARRO} fotos.`,
           );
         }
         const linhas = await tx
@@ -56,7 +56,7 @@ export function criarRepositorioFotos(db: Banco) {
           .where(eq(fotosCarro.carroId, carroId));
         const ids = new Set(atuais.map((foto) => foto.id));
         if (ordem.length !== ids.size || !ordem.every((id) => ids.has(id))) {
-          const mensagem = "Envie todas as fotos do carro, cada uma uma vez.";
+          const mensagem = "Envie todas as fotos do veículo, cada uma uma vez.";
           throw new ErroHttp(400, CODIGOS_ERRO.VALIDACAO, "Dados inválidos.", [
             { campo: "ordem", mensagem },
           ]);

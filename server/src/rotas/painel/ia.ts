@@ -28,7 +28,7 @@ export function rotasIa(ia: Ia | null) {
         throw new ErroHttp(
           400,
           CODIGOS_ERRO.REQUISICAO_INVALIDA,
-          "Envie o texto ou as imagens do carro.",
+          "Envie o texto ou as imagens do veículo.",
         );
       }
       const texto = formulario.get("texto");

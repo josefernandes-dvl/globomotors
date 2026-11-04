@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { CarroPainel, Cliente, Interesse } from "@globomotors/shared";
+import type { CarroPainel, Cliente, ClienteComDesejos, Interesse } from "@globomotors/shared";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   carroDeTeste,
@@ -174,6 +174,7 @@ describe("POST /api/dashboard/customers", () => {
         email: "maria.souza@teste.com",
         origem: "indicacao",
         observacoes: "Quer trocar o carro atual.",
+        desejos: [],
         interesses: 0,
         criadoEm,
         atualizadoEm,
@@ -202,6 +203,27 @@ describe("POST /api/dashboard/customers", () => {
       origem: null,
       observacoes: null,
     });
+  });
+
+  it("cadastra os interesses do cliente sem repetidos", async () => {
+    const resposta = await criar(
+      clienteDeTeste({ desejos: [" Onix automático ", "ONIX automático", "SUV diesel"] }),
+    );
+
+    expect(resposta.status).toBe(201);
+    expect(resposta.corpo.cliente.desejos).toEqual(["Onix automático", "SUV diesel"]);
+    expect((await buscar(resposta.corpo.cliente.id)).corpo).toEqual(resposta.corpo);
+  });
+
+  it("recusa interesse vazio sem salvar o cliente", async () => {
+    const antes = await listar();
+    const resposta = await criar(clienteDeTeste({ desejos: ["Onix", " "] }));
+
+    expect(resposta.status).toBe(400);
+    expect(resposta.corpo).toMatchObject({
+      erro: { campos: [{ campo: "desejos.1", mensagem: "Interesse vazio." }] },
+    });
+    expect(await listar()).toEqual(antes);
   });
 
   it("aceita telefone fixo", async () => {
@@ -339,6 +361,33 @@ describe("PUT /api/dashboard/customers/:id", () => {
     expect(resposta.corpo.cliente.interesses).toBe(1);
   });
 
+  it("troca os interesses pela lista nova e mantém os dados de quem ficou", async () => {
+    const cliente = await criarCliente({ desejos: ["Onix", "Corolla"] });
+    await api.requisitar("POST", "/dashboard/wishes", {
+      corpo: { clienteId: cliente.id, nome: "HB20", anoMinimo: 2020 },
+      cookie,
+    });
+
+    const resposta = await atualizar(
+      cliente.id,
+      clienteDeTeste({ telefone: cliente.telefone, desejos: ["Pulse", "hb20", "Corolla"] }),
+    );
+
+    expect(resposta.status).toBe(200);
+    expect(resposta.corpo.cliente.desejos).toEqual(["Corolla", "HB20", "Pulse"]);
+    const lista = await api.requisitar<{ clientes: ClienteComDesejos[] }>(
+      "GET",
+      "/dashboard/wishes",
+      { cookie },
+    );
+    const grupo = lista.corpo.clientes.find((item) => item.cliente.id === cliente.id);
+    expect(grupo?.desejos.map(({ nome, anoMinimo }) => [nome, anoMinimo])).toEqual([
+      ["Corolla", null],
+      ["HB20", 2020],
+      ["Pulse", null],
+    ]);
+  });
+
   it("recusa o telefone de outro cliente sem alterar nada", async () => {
     const outro = await criarCliente();
     const cliente = await criarCliente();
@@ -377,7 +426,7 @@ describe("PUT /api/dashboard/customers/:id", () => {
 
 describe("DELETE /api/dashboard/customers/:id", () => {
   it("apaga o cliente e os interesses dele, mas não o carro", async () => {
-    const cliente = await criarCliente();
+    const cliente = await criarCliente({ desejos: ["Onix"] });
     const { carro } = await criarInteresse(cliente.id);
 
     const resposta = await api.requisitar("DELETE", `/dashboard/customers/${cliente.id}`, {
@@ -399,6 +448,12 @@ describe("DELETE /api/dashboard/customers/:id", () => {
       { cookie },
     );
     expect(restante.corpo.carro.interessados).toBe(0);
+    const desejos = await api.requisitar<{ clientes: ClienteComDesejos[] }>(
+      "GET",
+      "/dashboard/wishes",
+      { cookie },
+    );
+    expect(desejos.corpo.clientes.map((item) => item.cliente.id)).not.toContain(cliente.id);
   });
 
   it.each([
