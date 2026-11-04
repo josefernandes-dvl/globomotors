@@ -16,6 +16,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -169,6 +170,19 @@ export const desejos = pgTable(
     criadoEm: criadoEm(),
   },
   (t) => [uniqueIndex("desejos_cliente_id_nome_unique").on(t.clienteId, sql`lower(${t.nome})`)],
+);
+
+export const carrosDescartados = pgTable(
+  "carros_descartados",
+  {
+    desejoId: uuid()
+      .notNull()
+      .references(() => desejos.id, { onDelete: "cascade" }),
+    carroId: uuid()
+      .notNull()
+      .references(() => carros.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.desejoId, t.carroId] }), index().on(t.carroId)],
 );
 
 export const loja = pgTable(

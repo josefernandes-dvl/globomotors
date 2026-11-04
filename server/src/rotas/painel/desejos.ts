@@ -1,4 +1,4 @@
-import { esquemaAtenderDesejo, esquemaDesejo } from "@globomotors/shared";
+import { esquemaCarroDoDesejo, esquemaDesejo } from "@globomotors/shared";
 import { Router } from "express";
 import type { Repositorios } from "../../repositorios/index.ts";
 import { idDaRota, naoEncontrado } from "../parametros.ts";
@@ -29,10 +29,17 @@ export function rotasDesejos(repositorios: Repositorios) {
 
   rotas.post("/:id/attend", async (req, res) => {
     const id = idDaRota(req.params.id, DESEJO_NAO_ENCONTRADO);
-    const { carroId } = esquemaAtenderDesejo.parse(req.body);
+    const { carroId } = esquemaCarroDoDesejo.parse(req.body);
     const interesse = await repositorios.interesses.atender(id, carroId);
     if (!interesse) throw naoEncontrado(DESEJO_NAO_ENCONTRADO);
     res.json({ interesse: paraInteresse(interesse) });
+  });
+
+  rotas.post("/:id/dismiss", async (req, res) => {
+    const id = idDaRota(req.params.id, DESEJO_NAO_ENCONTRADO);
+    const { carroId } = esquemaCarroDoDesejo.parse(req.body);
+    await repositorios.desejos.descartarCarro(id, carroId);
+    res.status(204).end();
   });
 
   return rotas;

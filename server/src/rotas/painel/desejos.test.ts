@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type {
   CarroPainel,
+  CarroSalvo,
   Cliente,
   ClienteComDesejos,
   Desejo,
@@ -93,6 +94,19 @@ function atender(id: string, carroId: unknown) {
     corpo: { carroId },
     cookie,
   });
+}
+
+function descartar(id: string, carroId: unknown) {
+  return api.requisitar("POST", `/dashboard/wishes/${id}/dismiss`, { corpo: { carroId }, cookie });
+}
+
+async function alterarStatus(carroId: string, status: string) {
+  const resposta = await api.requisitar<CarroSalvo>("PATCH", `/dashboard/cars/${carroId}/status`, {
+    corpo: { status },
+    cookie,
+  });
+  expect(resposta.status).toBe(200);
+  return resposta.corpo;
 }
 
 function possivel(carro: CarroPainel) {
@@ -379,5 +393,121 @@ describe("POST /api/dashboard/wishes/:id/attend", () => {
       },
     });
     expect(await desejosDe(cliente.id)).toHaveLength(1);
+  });
+});
+
+describe("POST /api/dashboard/wishes/:id/dismiss", () => {
+  it("tira o veículo só daquele interesse, e o cliente sem outro veículo perde o destaque", async () => {
+    const modelo = modeloNovo();
+    const outro = await criarCliente(modelo);
+    const cliente = await criarCliente(modelo, `${modelo} automático`);
+    const carro = await criarCarro({ modelo });
+    const ordem = async () => (await listar(outro.id, cliente.id)).map((grupo) => grupo.cliente.id);
+    expect(await ordem()).toEqual([cliente.id, outro.id]);
+
+    const resposta = await descartar(await idDoDesejo(cliente.id, modelo), carro.id);
+
+    expect(resposta.status).toBe(204);
+    expect(resposta.texto).toBe("");
+    expect(await listar(cliente.id)).toMatchObject([
+      {
+        possivelDesde: carro.publicadoEm,
+        desejos: [
+          { nome: modelo, possiveis: [] },
+          { nome: `${modelo} automático`, possiveis: [possivel(carro)] },
+        ],
+      },
+    ]);
+    expect(await desejosDe(outro.id)).toMatchObject([{ possiveis: [possivel(carro)] }]);
+
+    await descartar(await idDoDesejo(cliente.id, `${modelo} automático`), carro.id);
+
+    expect(await listar(cliente.id)).toMatchObject([
+      {
+        possivelDesde: null,
+        desejos: [
+          { nome: modelo, possiveis: [] },
+          { nome: `${modelo} automático`, possiveis: [] },
+        ],
+      },
+    ]);
+    expect(await ordem()).toEqual([outro.id, cliente.id]);
+  });
+
+  it("aceita repetir e continua valendo quando o veículo sai do catálogo e volta", async () => {
+    const modelo = modeloNovo();
+    const cliente = await criarCliente(modelo);
+    await criarCliente(modelo);
+    const carro = await criarCarro({ modelo });
+    const id = await idDoDesejo(cliente.id, modelo);
+
+    expect((await descartar(id, carro.id)).status).toBe(204);
+    expect((await descartar(id, carro.id)).status).toBe(204);
+    await alterarStatus(carro.id, "reservado");
+    const deVolta = await alterarStatus(carro.id, "disponivel");
+
+    expect(deVolta.possiveisInteressados).toBe(1);
+    expect(await listar(cliente.id)).toMatchObject([
+      { possivelDesde: null, desejos: [{ nome: modelo, possiveis: [] }] },
+    ]);
+  });
+
+  it("não impede excluir o interesse, atender, tirar da ficha nem excluir o veículo", async () => {
+    const cliente = await criarCliente("Excluído", "Atendido", "Tirado da ficha", "Mantido");
+    const carro = await criarCarro();
+    const ids = await Promise.all([
+      idDoDesejo(cliente.id, "Excluído"),
+      idDoDesejo(cliente.id, "Atendido"),
+      idDoDesejo(cliente.id, "Tirado da ficha"),
+      idDoDesejo(cliente.id, "Mantido"),
+    ]);
+    for (const id of ids) expect((await descartar(id, carro.id)).status).toBe(204);
+    const [excluido, atendido, , mantido] = ids;
+
+    const respostas = [
+      await api.requisitar("DELETE", `/dashboard/wishes/${excluido}`, { cookie }),
+      await atender(atendido, carro.id),
+      await api.requisitar("PUT", `/dashboard/customers/${cliente.id}`, {
+        corpo: clienteDeTeste({ desejos: ["Mantido"] }),
+        cookie,
+      }),
+      await api.requisitar("DELETE", `/dashboard/cars/${carro.id}`, { cookie }),
+    ];
+
+    expect(respostas.map(({ status }) => status)).toEqual([204, 200, 200, 204]);
+    expect(await desejosDe(cliente.id)).toMatchObject([{ id: mantido, possiveis: [] }]);
+  });
+
+  it("veículo inexistente responde 404", async () => {
+    const cliente = await criarCliente("Onix");
+
+    const resposta = await descartar(await idDoDesejo(cliente.id, "Onix"), ID_INEXISTENTE);
+
+    expect(resposta.status).toBe(404);
+    expect(resposta.corpo).toEqual({
+      erro: { codigo: "nao_encontrado", mensagem: "Veículo não encontrado." },
+    });
+  });
+
+  it.each([ID_INEXISTENTE, "abc"])("interesse %s responde 404", async (id) => {
+    const resposta = await descartar(id, (await criarCarro()).id);
+
+    expect(resposta.status).toBe(404);
+    expect(resposta.corpo).toEqual(INTERESSE_NAO_ENCONTRADO);
+  });
+
+  it("exige o veículo", async () => {
+    const cliente = await criarCliente("Onix");
+
+    const resposta = await descartar(await idDoDesejo(cliente.id, "Onix"), "abc");
+
+    expect(resposta.status).toBe(400);
+    expect(resposta.corpo).toEqual({
+      erro: {
+        codigo: "validacao",
+        mensagem: "Dados inválidos.",
+        campos: [{ campo: "carroId", mensagem: "Escolha um veículo." }],
+      },
+    });
   });
 });

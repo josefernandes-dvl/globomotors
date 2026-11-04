@@ -426,4 +426,110 @@ describe("PaginaInteresses", () => {
       { carroId: "c1" },
     ]);
   });
+
+  it("pergunta se cada veículo compatível atende e, no não, mantém o interesse sem ele e sem destaque", async () => {
+    const usuario = userEvent.setup();
+    let clientes = [ANA, BRUNO];
+    const api = simularInteresses({
+      "GET /api/dashboard/wishes": () => ({ clientes }),
+      "POST /api/dashboard/wishes/d1/dismiss": () => {
+        clientes = [
+          BRUNO,
+          {
+            ...ANA,
+            possivelDesde: null,
+            desejos: ANA.desejos.map((item) => ({ ...item, possiveis: [] })),
+          },
+        ];
+        return new Response(null, { status: 204 });
+      },
+    });
+    renderizarRota("/dashboard/wishlist");
+    const onix = itemDe(await screen.findByText("Onix automático"));
+    const pergunta = within(onix).getByRole("group", {
+      name: "Chevrolet Onix 1.0 Turbo LTZ 2020/2021 atende ao interesse?",
+    });
+    expect(pergunta.textContent).toBe("Atende ao interesse?SimNão");
+    const cartaoBruno = itemDe(screen.getByRole("link", { name: "Bruno Lima" }));
+    expect(within(cartaoBruno).queryByRole("group")).not.toBeInTheDocument();
+
+    await usuario.click(within(pergunta).getByRole("button", { name: "Não" }));
+
+    expect(
+      await screen.findByText(
+        "O interesse continua registrado, sem o veículo Chevrolet Onix 1.0 Turbo LTZ 2020/2021.",
+      ),
+    ).toHaveAttribute("role", "status");
+    expect(api.corpos("POST /api/dashboard/wishes/d1/dismiss")).toEqual([{ carroId: "c1" }]);
+    await waitFor(() => expect(screen.queryByText("Combina com:")).not.toBeInTheDocument());
+    expect(screen.queryByText("Possível interesse")).not.toBeInTheDocument();
+    const cartaoAna = itemDe(screen.getByRole("link", { name: "Ana Souza" }));
+    expect(within(cartaoAna).getByText("Onix automático")).toBeInTheDocument();
+    expect(within(cartaoAna).getByRole("button", { name: "Atender" })).toBeInTheDocument();
+    const secoes = screen.getByRole("navigation", { name: "Seções do painel" });
+    expect(within(secoes).getByRole("link", { name: /^Interesses/ }).textContent).toBe(
+      "Interesses",
+    );
+    expect(alteracoes(api.chaves())).toEqual(["POST /api/dashboard/wishes/d1/dismiss"]);
+  });
+
+  it("no sim, atende o interesse com o veículo da pergunta", async () => {
+    const usuario = userEvent.setup();
+    let clientes = [ANA, BRUNO];
+    const api = simularInteresses({
+      "GET /api/dashboard/wishes": () => ({ clientes }),
+      "POST /api/dashboard/wishes/d1/attend": () => {
+        clientes = [BRUNO];
+        return { interesse: interesse({ etapa: "em_contato" }) };
+      },
+    });
+    renderizarRota("/dashboard/wishlist");
+    const onix = itemDe(await screen.findByText("Onix automático"));
+
+    await usuario.click(
+      within(within(onix).getByRole("group", { name: /atende ao interesse\?$/ })).getByRole(
+        "button",
+        { name: "Sim" },
+      ),
+    );
+
+    expect(
+      await screen.findByText("Interesse atendido. Ana Souza está em “Em contato” no funil."),
+    ).toHaveAttribute("role", "status");
+    expect(api.corpos("POST /api/dashboard/wishes/d1/attend")).toEqual([{ carroId: "c1" }]);
+    await waitFor(() => expect(screen.queryByText("Onix automático")).not.toBeInTheDocument());
+    expect(alteracoes(api.chaves())).toEqual(["POST /api/dashboard/wishes/d1/attend"]);
+  });
+
+  it("bloqueia a resposta enquanto envia e, na falha, avisa e mantém o veículo", async () => {
+    const usuario = userEvent.setup();
+    let responder: (resposta: unknown) => void = () => undefined;
+    const api = simularInteresses({
+      "POST /api/dashboard/wishes/d1/dismiss": () =>
+        new Promise((resolver) => {
+          responder = resolver;
+        }),
+    });
+    renderizarRota("/dashboard/wishlist");
+    const onix = itemDe(await screen.findByText("Onix automático"));
+    const pergunta = within(onix).getByRole("group", { name: /atende ao interesse\?$/ });
+
+    await usuario.click(within(pergunta).getByRole("button", { name: "Não" }));
+
+    await waitFor(() =>
+      expect(within(pergunta).getByRole("button", { name: "Sim" })).toBeDisabled(),
+    );
+    expect(within(pergunta).getByRole("button", { name: "Não" })).toBeDisabled();
+    expect(within(onix).getByRole("button", { name: "Excluir interesse" })).toBeDisabled();
+
+    responder(respostaDeErro(404, "nao_encontrado", "Veículo não encontrado."));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Veículo não encontrado.");
+    await waitFor(() =>
+      expect(within(pergunta).getByRole("button", { name: "Não" })).toBeEnabled(),
+    );
+    expect(within(onix).getByText("Combina com:")).toBeInTheDocument();
+    expect(screen.getByText("Possível interesse")).toBeInTheDocument();
+    expect(alteracoes(api.chaves())).toEqual(["POST /api/dashboard/wishes/d1/dismiss"]);
+  });
 });

@@ -33,6 +33,7 @@ const ROTAS_DO_PAINEL = [
   ["POST", "/dashboard/wishes"],
   ["DELETE", `/dashboard/wishes/${ID}`],
   ["POST", `/dashboard/wishes/${ID}/attend`],
+  ["POST", `/dashboard/wishes/${ID}/dismiss`],
   ["GET", "/dashboard/store"],
   ["PUT", "/dashboard/store"],
   ["POST", "/dashboard/ai/extract-car"],

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  esquemaAtenderDesejo,
+  esquemaCarroDoDesejo,
   esquemaDesejo,
   normalizarTexto,
   veiculoCombinaComDesejo,
@@ -91,12 +91,12 @@ describe("esquemaDesejo", () => {
   });
 });
 
-describe("esquemaAtenderDesejo", () => {
+describe("esquemaCarroDoDesejo", () => {
   it("exige o id do veículo", () => {
-    expect(esquemaAtenderDesejo.safeParse({ carroId: "" }).error?.issues[0]?.message).toBe(
+    expect(esquemaCarroDoDesejo.safeParse({ carroId: "" }).error?.issues[0]?.message).toBe(
       "Escolha um veículo.",
     );
-    expect(esquemaAtenderDesejo.parse({ carroId: CLIENTE_ID })).toEqual({ carroId: CLIENTE_ID });
+    expect(esquemaCarroDoDesejo.parse({ carroId: CLIENTE_ID })).toEqual({ carroId: CLIENTE_ID });
   });
 });
 

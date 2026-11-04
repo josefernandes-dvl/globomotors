@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   carros,
+  carrosDescartados,
   clientes,
   desejos,
   fotosCarro,
@@ -74,8 +75,17 @@ async function povoar() {
   const { corpo: novoCliente } = await api.requisitar<{ cliente: { id: string } }>(
     "POST",
     "/dashboard/customers",
-    { corpo: clienteDeTeste({ desejos: ["Onix automático"] }), cookie },
+    { corpo: clienteDeTeste(), cookie },
   );
+  const { corpo: novoDesejo } = await api.requisitar<{ desejo: { id: string } }>(
+    "POST",
+    "/dashboard/wishes",
+    { corpo: { clienteId: novoCliente.cliente.id, nome: "Onix automático" }, cookie },
+  );
+  await api.requisitar("POST", `/dashboard/wishes/${novoDesejo.desejo.id}/dismiss`, {
+    corpo: { carroId: novoCarro.carro.id },
+    cookie,
+  });
   await api.requisitar("POST", "/dashboard/interests", {
     corpo: { clienteId: novoCliente.cliente.id, carroId: novoCarro.carro.id },
     cookie,
@@ -96,6 +106,7 @@ async function contar() {
     fotos: await db.$count(fotosCarro),
     clientes: await db.$count(clientes),
     desejos: await db.$count(desejos),
+    descartados: await db.$count(carrosDescartados),
     interesses: await db.$count(interesses),
     tentativas: await db.$count(tentativasLogin),
   };
@@ -110,6 +121,7 @@ it("deixa só o vendedor informado, sem carros, fotos, clientes, interesses nem 
     fotos: 1,
     clientes: 1,
     desejos: 1,
+    descartados: 1,
     interesses: 1,
     tentativas: 2,
   });
@@ -129,6 +141,7 @@ it("deixa só o vendedor informado, sem carros, fotos, clientes, interesses nem 
     fotos: 0,
     clientes: 0,
     desejos: 0,
+    descartados: 0,
     interesses: 0,
     tentativas: 0,
   });

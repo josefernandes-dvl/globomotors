@@ -9,8 +9,14 @@ import {
   type Desejo,
   type DesejoValidado,
   type Interesse,
+  type VeiculoPossivel,
 } from "@globomotors/shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+} from "@tanstack/react-query";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router";
 import { BotaoConfirmar } from "../../componentes/BotaoConfirmar.tsx";
@@ -266,6 +272,28 @@ function ItemDoDesejo({
     onSettled: () => queryClient.invalidateQueries({ queryKey: CHAVE_PAINEL }),
   });
 
+  const atender = useMutation({
+    mutationFn: (carroId: string) =>
+      api.post<{ interesse: Interesse }>(`/dashboard/wishes/${desejo.id}/attend`, { carroId }),
+    onSuccess: ({ interesse }) =>
+      avisar(
+        `Interesse atendido. ${cliente.nome} está em “${ROTULOS_ETAPA_FUNIL[interesse.etapa]}” no funil.`,
+      ),
+    onError: (erro) => avisar(mensagemDeErro(erro), "erro"),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: CHAVE_PAINEL }),
+  });
+
+  const descartar = useMutation({
+    mutationFn: (veiculo: VeiculoPossivel) =>
+      api.post(`/dashboard/wishes/${desejo.id}/dismiss`, { carroId: veiculo.id }),
+    onSuccess: (_, veiculo) =>
+      avisar(`O interesse continua registrado, sem o veículo ${nomeDoVeiculo(veiculo)}.`),
+    onError: (erro) => avisar(mensagemDeErro(erro), "erro"),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: CHAVE_PAINEL }),
+  });
+
+  const ocupado = excluir.isPending || atender.isPending || descartar.isPending;
+
   const criterios = [
     desejo.anoMinimo !== null && `A partir de ${desejo.anoMinimo}`,
     desejo.precoMaximo !== null && `Até ${formatarDinheiro(desejo.precoMaximo)}`,
@@ -285,15 +313,38 @@ function ItemDoDesejo({
       {desejo.possiveis.length > 0 && (
         <div className="text-sm">
           <p className="font-semibold text-[#8a5e00]">Combina com:</p>
-          <ul className="flex flex-col gap-0.5">
+          <ul className="flex flex-col gap-1.5">
             {desejo.possiveis.map((veiculo) => (
-              <li key={veiculo.id}>
+              <li key={veiculo.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <Link
                   to={`/dashboard/cars/${veiculo.id}`}
-                  className="wrap-break-word hover:text-acento"
+                  className="min-w-0 wrap-break-word hover:text-acento"
                 >
                   {`${nomeDoVeiculo(veiculo)} · ${formatarPreco(veiculo.precoVenda)}`}
                 </Link>
+                <div
+                  role="group"
+                  aria-label={`${nomeDoVeiculo(veiculo)} atende ao interesse?`}
+                  className="ml-auto flex items-center gap-1.5"
+                >
+                  <span className="text-xs font-semibold text-suave">Atende ao interesse?</span>
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    onClick={() => atender.mutate(veiculo.id)}
+                    className="botao botao-pequeno"
+                  >
+                    Sim
+                  </button>
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    onClick={() => descartar.mutate(veiculo)}
+                    className="botao botao-pequeno"
+                  >
+                    Não
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -301,8 +352,8 @@ function ItemDoDesejo({
       )}
       {atendendo ? (
         <FormularioAtender
-          cliente={cliente}
           desejo={desejo}
+          atender={atender}
           onCancelar={() => setAtendendo(false)}
         />
       ) : (
@@ -310,7 +361,7 @@ function ItemDoDesejo({
           <BotaoConfirmar
             pergunta="Excluir este interesse?"
             onConfirmar={() => excluir.mutate()}
-            desabilitado={excluir.isPending}
+            desabilitado={ocupado}
             rotulo="Excluir interesse"
             className="botao botao-pequeno botao-fantasma text-perigo"
           >
@@ -331,31 +382,16 @@ function ItemDoDesejo({
 }
 
 function FormularioAtender({
-  cliente,
   desejo,
+  atender,
   onCancelar,
 }: {
-  cliente: ClienteComDesejos["cliente"];
   desejo: Desejo;
+  atender: UseMutationResult<{ interesse: Interesse }, Error, string>;
   onCancelar: () => void;
 }) {
-  const queryClient = useQueryClient();
-  const avisar = useAvisos();
   const carros = useQuery(consultaCarrosPainel);
   const [carroId, setCarroId] = useState(desejo.possiveis[0]?.id ?? "");
-
-  const atender = useMutation({
-    mutationFn: (id: string) =>
-      api.post<{ interesse: Interesse }>(`/dashboard/wishes/${desejo.id}/attend`, {
-        carroId: id,
-      }),
-    onSuccess: ({ interesse }) =>
-      avisar(
-        `Interesse atendido. ${cliente.nome} está em “${ROTULOS_ETAPA_FUNIL[interesse.etapa]}” no funil.`,
-      ),
-    onError: (erro) => avisar(mensagemDeErro(erro), "erro"),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: CHAVE_PAINEL }),
-  });
 
   const possiveis = new Set(desejo.possiveis.map(({ id }) => id));
   const disponiveis = (carros.data ?? []).filter((carro) => carro.status !== "vendido");

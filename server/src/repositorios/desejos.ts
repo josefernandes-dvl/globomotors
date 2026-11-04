@@ -5,7 +5,7 @@ import {
 } from "@globomotors/shared";
 import { asc, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import type { Banco } from "../db/banco.ts";
-import { carros, clientes, desejos, interesses } from "../db/schema.ts";
+import { carros, carrosDescartados, clientes, desejos, interesses } from "../db/schema.ts";
 import { primeiro, traduzirRestricoes } from "./utilitarios.ts";
 
 const colunasDoVeiculo = {
@@ -32,14 +32,19 @@ const traduzir = traduzirRestricoes({
     mensagem: "Este cliente já tem este interesse.",
   },
   desejos_cliente_id_clientes_id_fk: { mensagem: "Cliente não encontrado." },
+  carros_descartados_desejo_id_desejos_id_fk: { mensagem: "Interesse não encontrado." },
+  carros_descartados_carro_id_carros_id_fk: { mensagem: "Veículo não encontrado." },
 });
 
 type Veiculo = Parameters<typeof veiculoCombinaComDesejo>[0] & { id: string };
-type DesejoDoCliente = CriterioDeDesejo & { clienteId: string };
+type DesejoDoCliente = CriterioDeDesejo & { id: string; clienteId: string };
+type Exclusoes = { funil: Set<string>; descartados: Set<string> };
 
-function combina(desejo: DesejoDoCliente, veiculo: Veiculo, funil: Set<string>) {
+function combina(desejo: DesejoDoCliente, veiculo: Veiculo, { funil, descartados }: Exclusoes) {
   return (
-    !funil.has(`${desejo.clienteId}:${veiculo.id}`) && veiculoCombinaComDesejo(veiculo, desejo)
+    !funil.has(`${desejo.clienteId}:${veiculo.id}`) &&
+    !descartados.has(`${desejo.id}:${veiculo.id}`) &&
+    veiculoCombinaComDesejo(veiculo, desejo)
   );
 }
 
@@ -52,16 +57,20 @@ export function criarRepositorioDesejos(db: Banco) {
       .orderBy(desc(sql`coalesce(${carros.publicadoEm}, ${carros.criadoEm})`));
   }
 
-  async function paresNoFunil() {
-    const pares = await db
-      .select({ clienteId: interesses.clienteId, carroId: interesses.carroId })
-      .from(interesses);
-    return new Set(pares.map(({ clienteId, carroId }) => `${clienteId}:${carroId}`));
+  async function exclusoes(): Promise<Exclusoes> {
+    const [pares, descartes] = await Promise.all([
+      db.select({ clienteId: interesses.clienteId, carroId: interesses.carroId }).from(interesses),
+      db.select().from(carrosDescartados),
+    ]);
+    return {
+      funil: new Set(pares.map(({ clienteId, carroId }) => `${clienteId}:${carroId}`)),
+      descartados: new Set(descartes.map(({ desejoId, carroId }) => `${desejoId}:${carroId}`)),
+    };
   }
 
   return {
     async listarPorCliente() {
-      const [linhas, veiculos, funil] = await Promise.all([
+      const [linhas, veiculos, excluidos] = await Promise.all([
         db
           .select({
             ...getTableColumns(desejos),
@@ -71,14 +80,14 @@ export function criarRepositorioDesejos(db: Banco) {
           .innerJoin(clientes, eq(clientes.id, desejos.clienteId))
           .orderBy(asc(desejos.ordem)),
         listarDisponiveis(),
-        paresNoFunil(),
+        exclusoes(),
       ]);
       const grupos = Map.groupBy(
         linhas.map(({ cliente, ...desejo }) => ({
           cliente,
           desejo: {
             ...desejo,
-            possiveis: veiculos.filter((veiculo) => combina(desejo, veiculo, funil)),
+            possiveis: veiculos.filter((veiculo) => combina(desejo, veiculo, excluidos)),
           },
         })),
         ({ cliente }) => cliente.id,
@@ -106,10 +115,10 @@ export function criarRepositorioDesejos(db: Banco) {
     async criar(dados: DesejoValidado) {
       const linhas = await db.insert(desejos).values(dados).returning().catch(traduzir);
       const desejo = primeiro(linhas);
-      const [veiculos, funil] = await Promise.all([listarDisponiveis(), paresNoFunil()]);
+      const [veiculos, excluidos] = await Promise.all([listarDisponiveis(), exclusoes()]);
       return {
         ...desejo,
-        possiveis: veiculos.filter((veiculo) => combina(desejo, veiculo, funil)),
+        possiveis: veiculos.filter((veiculo) => combina(desejo, veiculo, excluidos)),
       };
     },
 
@@ -121,21 +130,30 @@ export function criarRepositorioDesejos(db: Banco) {
       return desejo ?? null;
     },
 
+    async descartarCarro(desejoId: string, carroId: string) {
+      await db
+        .insert(carrosDescartados)
+        .values({ desejoId, carroId })
+        .onConflictDoNothing()
+        .catch(traduzir);
+    },
+
     async contarInteressados(veiculo: Veiculo) {
-      const [linhas, funil] = await Promise.all([
+      const [linhas, excluidos] = await Promise.all([
         db
           .select({
+            id: desejos.id,
             clienteId: desejos.clienteId,
             nome: desejos.nome,
             anoMinimo: desejos.anoMinimo,
             precoMaximo: desejos.precoMaximo,
           })
           .from(desejos),
-        paresNoFunil(),
+        exclusoes(),
       ]);
       return new Set(
         linhas
-          .filter((desejo) => combina(desejo, veiculo, funil))
+          .filter((desejo) => combina(desejo, veiculo, excluidos))
           .map(({ clienteId }) => clienteId),
       ).size;
     },

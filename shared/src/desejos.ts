@@ -32,7 +32,7 @@ export const esquemaDesejo = z.object(
 export type DadosDesejo = z.input<typeof esquemaDesejo>;
 export type DesejoValidado = z.output<typeof esquemaDesejo>;
 
-export const esquemaAtenderDesejo = z.object(
+export const esquemaCarroDoDesejo = z.object(
   { carroId: z.uuid({ error: "Escolha um veículo." }) },
   corpoInvalido,
 );
