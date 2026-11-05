@@ -135,6 +135,25 @@ describe("PaginaFormularioCarro", () => {
       );
       expect(within(vendedor).getByLabelText("Telefone")).toHaveAttribute("type", "tel");
       expect(screen.getByLabelText("Câmbio")).toHaveDisplayValue("Selecione");
+      expect(
+        within(screen.getByLabelText("Carroceria"))
+          .getAllByRole("option")
+          .map((opcao) => opcao.textContent),
+      ).toEqual([
+        "Selecione",
+        "Hatch",
+        "Sedã",
+        "SUV",
+        "Picape",
+        "Minivan",
+        "Cupê",
+        "Conversível",
+        "Utilitário",
+        "Moto",
+        "Scooter",
+        "Moto elétrica",
+        "Patinete",
+      ]);
       expect(itensAdicionais()).toEqual([]);
       expect(document.body).not.toHaveTextContent("—");
       expect(document.body).not.toHaveTextContent(/vitrine/i);

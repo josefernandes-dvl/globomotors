@@ -98,6 +98,13 @@ describe("esquemaCarro", () => {
     });
   });
 
+  it.each(["Moto", "Scooter", "Moto elétrica", "Patinete"])(
+    "aceita a carroceria %s",
+    (carroceria) => {
+      expect(esquemaCarro.parse({ ...basico, carroceria }).carroceria).toBe(carroceria);
+    },
+  );
+
   it.each([
     ["abc-1234", "ABC1234"],
     ["abc 1d23", "ABC1D23"],

@@ -73,6 +73,8 @@ describe("PaginaVitrine", () => {
     await abrirVitrine();
 
     expect(titulosDosCarros()).toEqual(["Jeep Compass", "Chevrolet Onix", "Hyundai HB20"]);
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 1, name: "Catálogo de veículos" }),
     ).toBeInTheDocument();
@@ -394,6 +396,186 @@ describe("PaginaVitrine", () => {
     expect(screen.getByRole("combobox", { name: "Ordenar por" })).toHaveTextContent("Destaques");
     expect(screen.getByRole("button", { name: "Filtros" })).toBeInTheDocument();
     expect(titulosDosCarros()).toEqual(["Jeep Compass", "Chevrolet Onix", "Hyundai HB20"]);
+  });
+
+  it("separa scooters, motos elétricas e patinetes em abas e os deixa sempre depois dos carros", async () => {
+    const pcx = carroPublico({
+      slug: "honda-pcx-160-2025-p1",
+      marca: "Honda",
+      modelo: "PCX 160",
+      versao: "DLX",
+      anoFabricacao: 2025,
+      anoModelo: 2025,
+      km: 0,
+      cambio: "CVT",
+      combustivel: "Gasolina",
+      carroceria: "Scooter",
+      destaque: true,
+      preco: 2_000_000,
+    });
+    const nmax = carroPublico({
+      slug: "yamaha-nmax-160-2024-y1",
+      marca: "Yamaha",
+      modelo: "NMax 160",
+      anoFabricacao: 2024,
+      anoModelo: 2024,
+      km: 3_000,
+      cambio: "CVT",
+      combustivel: "Gasolina",
+      carroceria: "Scooter",
+      preco: 1_900_000,
+    });
+    const patinete = carroPublico({
+      slug: "xiaomi-scooter-4-2025-x1",
+      marca: "Xiaomi",
+      modelo: "Scooter 4",
+      anoFabricacao: 2025,
+      anoModelo: 2025,
+      km: 0,
+      cambio: null,
+      combustivel: "Elétrico",
+      carroceria: "Patinete",
+      preco: 300_000,
+    });
+    const { usuario, router } = await abrirVitrine({
+      "GET /api/showroom/cars": { carros: [pcx, ONIX, patinete, HB20, nmax, COMPASS] },
+      "GET /api/showroom/cars/xiaomi-scooter-4-2025-x1": { carro: patinete },
+    });
+    const aba = (nome: string) => screen.getByRole("tab", { name: nome });
+
+    expect(
+      within(screen.getByRole("tablist", { name: "Tipos de veículo" }))
+        .getAllByRole("tab")
+        .map((item) => item.textContent),
+    ).toEqual(["Todos", "Carros", "Scooters", "Patinetes"]);
+    expect(aba("Todos")).toHaveAttribute("aria-selected", "true");
+    expect(titulosDosCarros()).toEqual([
+      "Jeep Compass",
+      "Chevrolet Onix",
+      "Hyundai HB20",
+      "Honda PCX 160",
+      "Xiaomi Scooter 4",
+      "Yamaha NMax 160",
+    ]);
+    expect(screen.getByText("veículos disponíveis")).toHaveTextContent("5 veículos disponíveis");
+
+    const ordem = screen.getByRole("combobox", { name: "Ordenar por" });
+    await escolherOpcao(usuario, ordem, "Menor preço");
+    expect(titulosDosCarros()).toEqual([
+      "Hyundai HB20",
+      "Chevrolet Onix",
+      "Jeep Compass",
+      "Xiaomi Scooter 4",
+      "Yamaha NMax 160",
+      "Honda PCX 160",
+    ]);
+
+    await usuario.click(screen.getByRole("button", { name: "Filtros" }));
+    expect(opcoesDoGrupo("Carroceria")).toEqual(["Hatch", "SUV", "Scooter", "Patinete"]);
+    await usuario.click(within(grupo("Filtrar por marca")).getByRole("button", { name: "Honda" }));
+    expect(titulosDosCarros()).toEqual(["Honda PCX 160"]);
+
+    await usuario.click(aba("Scooters"));
+    expect(aba("Scooters")).toHaveAttribute("aria-selected", "true");
+    expect(aba("Todos")).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tabpanel", { name: "Scooters" })).toBeInTheDocument();
+    expect(titulosDosCarros()).toEqual(["Yamaha NMax 160", "Honda PCX 160"]);
+    expect(ordem).toHaveTextContent("Menor preço");
+    expect(opcoesDoGrupo("Filtrar por marca")).toEqual(["Todas", "Honda", "Yamaha"]);
+    expect(
+      within(grupo("Filtrar por marca")).getByRole("button", { name: "Todas" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    const filtros = screen.getByRole("button", { name: "Filtros" });
+    expect(filtros).toHaveAttribute("aria-expanded", "false");
+    await usuario.click(filtros);
+    expect(screen.queryByRole("group", { name: "Carroceria" })).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole("combobox").map((campo) => campo.getAttribute("aria-label")),
+    ).toEqual(["Ordenar por", "Ano"]);
+
+    await usuario.click(aba("Patinetes"));
+    expect(titulosDosCarros()).toEqual(["Xiaomi Scooter 4"]);
+    expect(screen.queryByRole("group", { name: "Filtrar por marca" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Filtros/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Limpar filtros" })).not.toBeInTheDocument();
+
+    await usuario.click(screen.getByRole("link", { name: /Xiaomi Scooter 4/ }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Xiaomi Scooter 4" }),
+    ).toBeInTheDocument();
+    await usuario.click(screen.getByRole("link", { name: "Voltar ao catálogo" }));
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Catálogo de veículos" }),
+    ).toBeInTheDocument();
+    expect(router.state.historyAction).toBe("POP");
+    expect(aba("Patinetes")).toHaveAttribute("aria-selected", "true");
+    expect(titulosDosCarros()).toEqual(["Xiaomi Scooter 4"]);
+  });
+
+  it("separa carros e motos em abas, com as scooters e as motos elétricas fora da aba Motos", async () => {
+    const cg = carroPublico({
+      slug: "honda-cg-160-2023-h2",
+      marca: "Honda",
+      modelo: "CG 160",
+      carroceria: "Moto",
+      preco: 1_890_000,
+    });
+    const pcx = carroPublico({
+      slug: "honda-pcx-160-2025-p1",
+      marca: "Honda",
+      modelo: "PCX 160",
+      carroceria: "Scooter",
+      preco: 2_000_000,
+    });
+    const voltz = carroPublico({
+      slug: "voltz-evs-2024-v1",
+      marca: "Voltz",
+      modelo: "EVS",
+      carroceria: "Moto elétrica",
+      preco: 1_790_000,
+    });
+    const uno = carroPublico({
+      slug: "fiat-uno-2015-f1",
+      marca: "Fiat",
+      modelo: "Uno",
+      carroceria: null,
+      preco: 3_000_000,
+    });
+    const { usuario } = await abrirVitrine({
+      "GET /api/showroom/cars": { carros: [cg, ONIX, pcx, uno, voltz, HB20, COMPASS] },
+    });
+    const aba = (nome: string) => screen.getByRole("tab", { name: nome });
+
+    expect(
+      within(screen.getByRole("tablist", { name: "Tipos de veículo" }))
+        .getAllByRole("tab")
+        .map((item) => item.textContent),
+    ).toEqual(["Todos", "Carros", "Motos", "Scooters", "Motos elétricas"]);
+    expect(titulosDosCarros()).toEqual([
+      "Jeep Compass",
+      "Honda CG 160",
+      "Chevrolet Onix",
+      "Fiat Uno",
+      "Hyundai HB20",
+      "Honda PCX 160",
+      "Voltz EVS",
+    ]);
+
+    await usuario.click(aba("Carros"));
+    expect(aba("Carros")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel", { name: "Carros" })).toBeInTheDocument();
+    expect(titulosDosCarros()).toEqual([
+      "Jeep Compass",
+      "Chevrolet Onix",
+      "Fiat Uno",
+      "Hyundai HB20",
+    ]);
+
+    await usuario.click(aba("Motos"));
+    expect(aba("Motos")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel", { name: "Motos" })).toBeInTheDocument();
+    expect(titulosDosCarros()).toEqual(["Honda CG 160"]);
   });
 
   it("mostra o carregamento e avisa quando ainda não há carro publicado", async () => {

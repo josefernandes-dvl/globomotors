@@ -7,9 +7,11 @@ import {
 } from "@globomotors/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { Abas } from "../../componentes/Abas.tsx";
 import { Icone } from "../../componentes/Icone.tsx";
 import { Selecao } from "../../componentes/Selecao.tsx";
 import {
+  abasDoCatalogo,
   anosUteis,
   combinaComBusca,
   contarFiltros,
@@ -23,6 +25,7 @@ import {
   ordenarCarros,
   ORDENS_VITRINE,
   ROTULOS_ORDEM,
+  type AbaDoCatalogo,
   type Ordem,
 } from "../../lib/catalogo.ts";
 import { linkWhatsApp } from "../../lib/compartilhamento.ts";
@@ -104,22 +107,24 @@ export function PaginaVitrine() {
   const [busca, setBusca] = useEstadoDaPagina("busca", "");
   const [ordem, setOrdem] = useEstadoDaPagina<Ordem>("ordem", "destaque");
   const [filtros, setFiltros] = useEstadoDaPagina("filtros", FILTROS_VAZIOS);
+  const [escolhida, setEscolhida] = useEstadoDaPagina<AbaDoCatalogo>("aba", null);
   const [painelAberto, setPainelAberto] = useState(false);
 
   const todos = carros.data ?? [];
   const disponiveis = todos.filter((carro) => carro.status === "disponivel").length;
+  const { abas, aba, carros: daAba } = abasDoCatalogo(todos, escolhida);
   const encontrados = ordenarCarros(
-    filtrarCarros(todos, filtros).filter((carro) => combinaComBusca(carro, busca)),
+    filtrarCarros(daAba, filtros).filter((carro) => combinaComBusca(carro, busca)),
     ordem,
     (carro) => carro.preco,
   );
   const ativos = contarFiltros(filtros);
-  const marcas = marcasDe(todos);
+  const marcas = marcasDe(daAba);
   const grupos = GRUPOS.map((grupo) => ({
     ...grupo,
-    opcoes: opcoesPresentes(grupo.opcoes, todos.map(grupo.valorDe)),
+    opcoes: opcoesPresentes(grupo.opcoes, daAba.map(grupo.valorDe)),
   })).filter((grupo) => grupo.opcoes.length > 1);
-  const faixas = FAIXAS.map((faixa) => ({ ...faixa, valores: faixa.valoresDe(todos) })).filter(
+  const faixas = FAIXAS.map((faixa) => ({ ...faixa, valores: faixa.valoresDe(daAba) })).filter(
     (faixa) => faixa.valores.length > 0,
   );
 
@@ -217,169 +222,185 @@ export function PaginaVitrine() {
       </div>
 
       <main className="mx-auto max-w-7xl px-4 pb-16 sm:px-5">
-        <div className="flex flex-col gap-2.5 pt-4 sm:flex-row sm:items-center">
-          <label className="relative flex-1">
-            <span className="sr-only">Buscar veículos</span>
-            <Icone
-              nome="busca"
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-noite-suave"
-            />
-            <input
-              type="search"
-              value={busca}
-              onChange={(evento) => setBusca(evento.target.value)}
-              placeholder="O que você procura?"
-              className="min-h-10 w-full rounded-[10px] border border-[#22314b] bg-noite-campo py-2 pr-3 pl-[38px] text-noite-texto outline-none placeholder:text-noite-suave focus:border-acento focus:ring-2 focus:ring-acento/25"
-            />
-          </label>
-          <div className="flex items-center gap-2.5">
-            {(grupos.length > 0 || faixas.length > 0) && (
-              <button
-                type="button"
-                aria-expanded={painelAberto}
-                aria-controls="painel-de-filtros"
-                aria-label={
-                  ativos > 0 ? `Filtros, ${plural(ativos, "ativo", "ativos")}` : undefined
-                }
-                onClick={() => setPainelAberto(!painelAberto)}
-                className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-[10px] border px-3.5 text-sm font-semibold transition ${
-                  painelAberto || ativos > 0
-                    ? "border-acento bg-acento/15 text-white"
-                    : "border-[#22314b] bg-noite-campo text-noite-texto hover:border-[#33476a]"
-                }`}
-              >
-                <Icone nome="filtros" />
-                Filtros
-                {ativos > 0 && (
-                  <span className="grid min-w-5 place-items-center rounded-full bg-acento px-1.5 text-xs leading-5 font-bold text-white tabular-nums">
-                    {ativos}
-                  </span>
-                )}
-              </button>
-            )}
-            <Selecao
-              rotulo="Ordenar por"
-              tema="escuro"
-              alinhar="direita"
-              valor={ordem}
-              opcoes={OPCOES_DE_ORDEM}
-              aoMudar={setOrdem}
-              className="ml-auto min-w-[150px]"
-            />
-          </div>
-        </div>
-
-        <div
-          id="painel-de-filtros"
-          hidden={!painelAberto}
-          className="mt-3 rounded-2xl border border-noite-linha bg-noite-cartao p-4 transition duration-200 starting:-translate-y-1 starting:opacity-0"
+        <Abas
+          rotulo="Tipos de veículo"
+          tema="escuro"
+          abas={abas}
+          valor={aba}
+          aoMudar={(nova) => {
+            setEscolhida(nova);
+            setFiltros(FILTROS_VAZIOS);
+            setPainelAberto(false);
+          }}
+          className="-mx-4 mt-2 px-4 sm:mx-0 sm:px-0"
         >
-          {grupos.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-3">
-              {grupos.map(({ campo, titulo, opcoes }) => (
-                <fieldset key={campo}>
-                  <legend className="mb-2 text-xs font-semibold tracking-[0.08em] text-noite-suave uppercase">
-                    {titulo}
-                  </legend>
-                  <div className="flex flex-wrap gap-1.5">
-                    {opcoes.map((opcao) => {
-                      const marcado = filtros[campo].includes(opcao);
-                      return (
-                        <button
-                          key={opcao}
-                          type="button"
-                          aria-pressed={marcado}
-                          onClick={() =>
-                            setFiltros({ ...filtros, [campo]: alternar(filtros[campo], opcao) })
-                          }
-                          className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${
-                            marcado
-                              ? "border-acento bg-acento/20 text-white"
-                              : "border-noite-borda text-noite-prata hover:border-[#33476a]"
-                          }`}
-                        >
-                          {marcado && <Icone nome="marcado" className="size-3.5" />}
-                          {opcao}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-              ))}
+          <div className="flex flex-col gap-2.5 pt-4 sm:flex-row sm:items-center">
+            <label className="relative flex-1">
+              <span className="sr-only">Buscar veículos</span>
+              <Icone
+                nome="busca"
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-noite-suave"
+              />
+              <input
+                type="search"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+                placeholder="O que você procura?"
+                className="min-h-10 w-full rounded-[10px] border border-[#22314b] bg-noite-campo py-2 pr-3 pl-[38px] text-noite-texto outline-none placeholder:text-noite-suave focus:border-acento focus:ring-2 focus:ring-acento/25"
+              />
+            </label>
+            <div className="flex items-center gap-2.5">
+              {(grupos.length > 0 || faixas.length > 0) && (
+                <button
+                  type="button"
+                  aria-expanded={painelAberto}
+                  aria-controls="painel-de-filtros"
+                  aria-label={
+                    ativos > 0 ? `Filtros, ${plural(ativos, "ativo", "ativos")}` : undefined
+                  }
+                  onClick={() => setPainelAberto(!painelAberto)}
+                  className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-[10px] border px-3.5 text-sm font-semibold transition ${
+                    painelAberto || ativos > 0
+                      ? "border-acento bg-acento/15 text-white"
+                      : "border-[#22314b] bg-noite-campo text-noite-texto hover:border-[#33476a]"
+                  }`}
+                >
+                  <Icone nome="filtros" />
+                  Filtros
+                  {ativos > 0 && (
+                    <span className="grid min-w-5 place-items-center rounded-full bg-acento px-1.5 text-xs leading-5 font-bold text-white tabular-nums">
+                      {ativos}
+                    </span>
+                  )}
+                </button>
+              )}
+              <Selecao
+                rotulo="Ordenar por"
+                tema="escuro"
+                alinhar="direita"
+                valor={ordem}
+                opcoes={OPCOES_DE_ORDEM}
+                aoMudar={setOrdem}
+                className="ml-auto min-w-[150px]"
+              />
             </div>
-          )}
-          {faixas.length > 0 && (
-            <div
-              className={`grid grid-cols-2 gap-3 md:grid-cols-3 ${grupos.length > 0 ? "mt-4" : ""}`}
-            >
-              {faixas.map(({ campo, titulo, qualquer, valores, rotulo }) => (
-                <div key={campo} className="flex flex-col gap-1.5">
-                  <span
-                    aria-hidden="true"
-                    className="text-xs font-semibold tracking-[0.08em] text-noite-suave uppercase"
-                  >
-                    {titulo}
-                  </span>
-                  <Selecao
-                    rotulo={titulo}
-                    tema="escuro"
-                    valor={String(filtros[campo] ?? "")}
-                    opcoes={[
-                      { valor: "", rotulo: qualquer },
-                      ...valores.map((valor) => ({ valor: String(valor), rotulo: rotulo(valor) })),
-                    ]}
-                    aoMudar={(valor) =>
-                      setFiltros({ ...filtros, [campo]: valor ? Number(valor) : null })
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="mt-5 flex items-center justify-between gap-3 border-t border-noite-linha pt-4">
-            <button
-              type="button"
-              disabled={ativos === 0}
-              onClick={() => setFiltros({ ...FILTROS_VAZIOS, marca: filtros.marca })}
-              className="cursor-pointer text-sm font-semibold text-acento-claro hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Limpar filtros
-            </button>
-            <button
-              type="button"
-              onClick={() => setPainelAberto(false)}
-              className="botao botao-primario"
-            >
-              {`Ver ${plural(encontrados.length, "veículo", "veículos")}`}
-            </button>
           </div>
-        </div>
 
-        {marcas.length > 1 && (
           <div
-            role="group"
-            aria-label="Filtrar por marca"
-            className="-mx-4 flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-4 pt-3 sm:mx-0 sm:flex-wrap sm:px-0"
+            id="painel-de-filtros"
+            hidden={!painelAberto}
+            className="mt-3 rounded-2xl border border-noite-linha bg-noite-cartao p-4 transition duration-200 starting:-translate-y-1 starting:opacity-0"
           >
-            {["", ...marcas].map((opcao) => (
-              <button
-                key={opcao || "todas"}
-                type="button"
-                aria-pressed={filtros.marca === opcao}
-                onClick={() => setFiltros({ ...filtros, marca: opcao })}
-                className={`flex-none cursor-pointer rounded-full border px-3.5 py-[7px] text-[13px] font-semibold tracking-[0.04em] uppercase ${
-                  filtros.marca === opcao
-                    ? "border-[#c9d2de] bg-linear-to-b from-white to-[#c9d2de] text-noite"
-                    : "border-noite-borda text-noite-prata hover:border-[#33476a]"
-                }`}
+            {grupos.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-3">
+                {grupos.map(({ campo, titulo, opcoes }) => (
+                  <fieldset key={campo}>
+                    <legend className="mb-2 text-xs font-semibold tracking-[0.08em] text-noite-suave uppercase">
+                      {titulo}
+                    </legend>
+                    <div className="flex flex-wrap gap-1.5">
+                      {opcoes.map((opcao) => {
+                        const marcado = filtros[campo].includes(opcao);
+                        return (
+                          <button
+                            key={opcao}
+                            type="button"
+                            aria-pressed={marcado}
+                            onClick={() =>
+                              setFiltros({ ...filtros, [campo]: alternar(filtros[campo], opcao) })
+                            }
+                            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${
+                              marcado
+                                ? "border-acento bg-acento/20 text-white"
+                                : "border-noite-borda text-noite-prata hover:border-[#33476a]"
+                            }`}
+                          >
+                            {marcado && <Icone nome="marcado" className="size-3.5" />}
+                            {opcao}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                ))}
+              </div>
+            )}
+            {faixas.length > 0 && (
+              <div
+                className={`grid grid-cols-2 gap-3 md:grid-cols-3 ${grupos.length > 0 ? "mt-4" : ""}`}
               >
-                {opcao || "Todas"}
+                {faixas.map(({ campo, titulo, qualquer, valores, rotulo }) => (
+                  <div key={campo} className="flex flex-col gap-1.5">
+                    <span
+                      aria-hidden="true"
+                      className="text-xs font-semibold tracking-[0.08em] text-noite-suave uppercase"
+                    >
+                      {titulo}
+                    </span>
+                    <Selecao
+                      rotulo={titulo}
+                      tema="escuro"
+                      valor={String(filtros[campo] ?? "")}
+                      opcoes={[
+                        { valor: "", rotulo: qualquer },
+                        ...valores.map((valor) => ({
+                          valor: String(valor),
+                          rotulo: rotulo(valor),
+                        })),
+                      ]}
+                      aoMudar={(valor) =>
+                        setFiltros({ ...filtros, [campo]: valor ? Number(valor) : null })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-5 flex items-center justify-between gap-3 border-t border-noite-linha pt-4">
+              <button
+                type="button"
+                disabled={ativos === 0}
+                onClick={() => setFiltros({ ...FILTROS_VAZIOS, marca: filtros.marca })}
+                className="cursor-pointer text-sm font-semibold text-acento-claro hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Limpar filtros
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => setPainelAberto(false)}
+                className="botao botao-primario"
+              >
+                {`Ver ${plural(encontrados.length, "veículo", "veículos")}`}
+              </button>
+            </div>
           </div>
-        )}
 
-        <div className="pt-4">{conteudo}</div>
+          {marcas.length > 1 && (
+            <div
+              role="group"
+              aria-label="Filtrar por marca"
+              className="-mx-4 flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-4 pt-3 sm:mx-0 sm:flex-wrap sm:px-0"
+            >
+              {["", ...marcas].map((opcao) => (
+                <button
+                  key={opcao || "todas"}
+                  type="button"
+                  aria-pressed={filtros.marca === opcao}
+                  onClick={() => setFiltros({ ...filtros, marca: opcao })}
+                  className={`flex-none cursor-pointer rounded-full border px-3.5 py-[7px] text-[13px] font-semibold tracking-[0.04em] uppercase ${
+                    filtros.marca === opcao
+                      ? "border-[#c9d2de] bg-linear-to-b from-white to-[#c9d2de] text-noite"
+                      : "border-noite-borda text-noite-prata hover:border-[#33476a]"
+                  }`}
+                >
+                  {opcao || "Todas"}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="pt-4">{conteudo}</div>
+        </Abas>
       </main>
 
       <RodapeVitrine loja={loja} />

@@ -9,6 +9,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useState, type ReactNode } from "react";
 import { Link } from "react-router";
+import { Abas } from "../../componentes/Abas.tsx";
 import { BotaoConfirmar } from "../../componentes/BotaoConfirmar.tsx";
 import { Icone } from "../../componentes/Icone.tsx";
 import { ImagemDoCarro } from "../../componentes/ImagemDoCarro.tsx";
@@ -16,11 +17,13 @@ import { Selecao } from "../../componentes/Selecao.tsx";
 import { api } from "../../lib/api.ts";
 import { useAvisos } from "../../lib/avisos.ts";
 import {
+  abasDoCatalogo,
   combinaComBusca,
   marcasDe,
   ordenarCarros,
   ORDENS_PAINEL,
   ROTULOS_ORDEM,
+  type AbaDoCatalogo,
   type Ordem,
 } from "../../lib/catalogo.ts";
 import { fichaDoCarro, linkDoCarro } from "../../lib/compartilhamento.ts";
@@ -67,6 +70,7 @@ export function PaginaCatalogo() {
   const [marca, setMarca] = useState("");
   const [status, setStatus] = useState<StatusCarro | "">("");
   const [ordem, setOrdem] = useState<Ordem>("recentes");
+  const [escolhida, setEscolhida] = useState<AbaDoCatalogo>(null);
   const [ficha, setFicha] = useState<string | null>(null);
 
   const mudarStatus = useMutation({
@@ -121,12 +125,13 @@ export function PaginaCatalogo() {
   }
 
   const todos = carros.data ?? [];
+  const { abas, aba, carros: daAba } = abasDoCatalogo(todos, escolhida);
   const opcoesDeMarca = [
     { valor: "", rotulo: "Todas as marcas" },
-    ...marcasDe(todos).map((opcao) => ({ valor: opcao, rotulo: opcao })),
+    ...marcasDe(daAba).map((opcao) => ({ valor: opcao, rotulo: opcao })),
   ];
   const encontrados = ordenarCarros(
-    todos.filter(
+    daAba.filter(
       (carro) =>
         (!marca || carro.marca === marca) &&
         (!status || carro.status === status) &&
@@ -211,48 +216,59 @@ export function PaginaCatalogo() {
       }
     >
       {todos.length > 0 && <Estatisticas carros={todos} />}
-      {todos.length > 0 && (
-        <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-          <label className="relative col-span-2 sm:min-w-[240px] sm:flex-1">
-            <span className="sr-only">Buscar no catálogo</span>
-            <Icone
-              nome="busca"
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-suave"
+      <Abas
+        rotulo="Tipos de veículo"
+        abas={abas}
+        valor={aba}
+        aoMudar={(nova) => {
+          setEscolhida(nova);
+          setMarca("");
+        }}
+        className="-mx-5 mb-4 px-5 sm:mx-0 sm:px-0"
+      >
+        {todos.length > 0 && (
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <label className="relative col-span-2 sm:min-w-[240px] sm:flex-1">
+              <span className="sr-only">Buscar no catálogo</span>
+              <Icone
+                nome="busca"
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-suave"
+              />
+              <input
+                type="search"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+                placeholder="Buscar por marca, modelo, placa, vendedor…"
+                className="entrada pl-9"
+              />
+            </label>
+            <Selecao
+              rotulo="Filtrar por marca"
+              valor={marca}
+              opcoes={opcoesDeMarca}
+              aoMudar={setMarca}
+              className="sm:w-44"
             />
-            <input
-              type="search"
-              value={busca}
-              onChange={(evento) => setBusca(evento.target.value)}
-              placeholder="Buscar por marca, modelo, placa, vendedor…"
-              className="entrada pl-9"
+            <Selecao
+              rotulo="Filtrar por status"
+              valor={status}
+              opcoes={OPCOES_DO_FILTRO_DE_STATUS}
+              aoMudar={setStatus}
+              alinhar="direita"
+              className="sm:w-44"
             />
-          </label>
-          <Selecao
-            rotulo="Filtrar por marca"
-            valor={marca}
-            opcoes={opcoesDeMarca}
-            aoMudar={setMarca}
-            className="sm:w-44"
-          />
-          <Selecao
-            rotulo="Filtrar por status"
-            valor={status}
-            opcoes={OPCOES_DO_FILTRO_DE_STATUS}
-            aoMudar={setStatus}
-            alinhar="direita"
-            className="sm:w-44"
-          />
-          <Selecao
-            rotulo="Ordenar por"
-            valor={ordem}
-            opcoes={OPCOES_DE_ORDEM}
-            aoMudar={setOrdem}
-            alinhar="direita"
-            className="col-span-2 sm:w-44"
-          />
-        </div>
-      )}
-      {conteudo}
+            <Selecao
+              rotulo="Ordenar por"
+              valor={ordem}
+              opcoes={OPCOES_DE_ORDEM}
+              aoMudar={setOrdem}
+              alinhar="direita"
+              className="col-span-2 sm:w-44"
+            />
+          </div>
+        )}
+        {conteudo}
+      </Abas>
       {ficha !== null && <DialogoDaFicha texto={ficha} onFechar={() => setFicha(null)} />}
     </PaginaDoPainel>
   );

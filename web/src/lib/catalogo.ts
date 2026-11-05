@@ -1,4 +1,9 @@
-import { normalizarTexto, type CarroPublico, type StatusCarro } from "@globomotors/shared";
+import {
+  normalizarTexto,
+  type Carroceria,
+  type CarroPublico,
+  type StatusCarro,
+} from "@globomotors/shared";
 import { formatarAnos } from "./formatacao.ts";
 
 export const ROTULOS_ORDEM = {
@@ -14,6 +19,26 @@ export type Ordem = keyof typeof ROTULOS_ORDEM;
 
 export const ORDENS_VITRINE: Ordem[] = ["destaque", "precoAsc", "precoDesc", "ano", "km"];
 export const ORDENS_PAINEL: Ordem[] = ["recentes", "precoAsc", "precoDesc", "ano", "km"];
+
+const ABAS_ESPECIAIS = [
+  { valor: "Scooter", rotulo: "Scooters" },
+  { valor: "Moto elétrica", rotulo: "Motos elétricas" },
+  { valor: "Patinete", rotulo: "Patinetes" },
+] as const satisfies readonly { valor: Carroceria; rotulo: string }[];
+
+const ABAS_DE_TIPO = [
+  { valor: "carros", rotulo: "Carros" },
+  { valor: "Moto", rotulo: "Motos" },
+  ...ABAS_ESPECIAIS,
+] as const;
+
+export type AbaDoCatalogo = (typeof ABAS_DE_TIPO)[number]["valor"] | null;
+
+const ESPECIAIS = new Set<string | null>(ABAS_ESPECIAIS.map(({ valor }) => valor));
+
+function abaDoVeiculo({ carroceria }: { carroceria: string | null }) {
+  return ABAS_DE_TIPO.find(({ valor }) => valor === carroceria)?.valor ?? "carros";
+}
 
 export const LIMITES_DE_PRECO = [
   3_000_000, 5_000_000, 7_000_000, 10_000_000, 15_000_000, 20_000_000, 30_000_000,
@@ -157,5 +182,24 @@ export function ordenarCarros<T extends CarroDoCatalogo>(
     ano: (a, b) => (anoDe(b) ?? 0) - (anoDe(a) ?? 0),
     km: (a, b) => (a.km ?? Infinity) - (b.km ?? Infinity),
   };
-  return carros.toSorted(comparadores[ordem]);
+  const especial = (carro: T) => Number(ESPECIAIS.has(carro.carroceria));
+  return carros.toSorted((a, b) => especial(a) - especial(b) || comparadores[ordem](a, b));
+}
+
+export function abasDoCatalogo<T extends { carroceria: string | null }>(
+  carros: T[],
+  escolhida: AbaDoCatalogo,
+) {
+  const presentes = new Set(carros.map(abaDoVeiculo));
+  const tipos = ABAS_DE_TIPO.filter(({ valor }) => presentes.has(valor));
+  const abas: { valor: AbaDoCatalogo; rotulo: string }[] = [
+    { valor: null, rotulo: "Todos" },
+    ...(tipos.length > 1 ? tipos : []),
+  ];
+  const aba = abas.some(({ valor }) => valor === escolhida) ? escolhida : null;
+  return {
+    abas,
+    aba,
+    carros: aba === null ? carros : carros.filter((carro) => abaDoVeiculo(carro) === aba),
+  };
 }

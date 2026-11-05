@@ -46,6 +46,9 @@ export const CARROCERIAS = [
   "Conversível",
   "Utilitário",
   "Moto",
+  "Scooter",
+  "Moto elétrica",
+  "Patinete",
 ] as const;
 export type Carroceria = (typeof CARROCERIAS)[number];
 

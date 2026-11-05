@@ -2,6 +2,7 @@ import { CAMBIOS, CARROCERIAS } from "@globomotors/shared";
 import { describe, expect, it } from "vitest";
 import { carroPainel, carroPublico } from "../testes/dados.ts";
 import {
+  abasDoCatalogo,
   anosUteis,
   combinaComBusca,
   contarFiltros,
@@ -13,6 +14,9 @@ import {
   marcasDe,
   opcoesPresentes,
   ordenarCarros,
+  ROTULOS_ORDEM,
+  type AbaDoCatalogo,
+  type Ordem,
 } from "./catalogo.ts";
 
 const onix = carroPainel({ id: "onix" });
@@ -129,6 +133,109 @@ describe("ordenarCarros", () => {
       "comum",
       "vendido",
     ]);
+  });
+
+  it.each(Object.keys(ROTULOS_ORDEM) as Ordem[])(
+    "em “%s”, põe scooter, moto elétrica e patinete depois de todos os outros, mesmo ganhando na ordem",
+    (ordem) => {
+      const vantagens = {
+        destaque: true,
+        precoVenda: 100_000,
+        anoFabricacao: 2026,
+        anoModelo: 2026,
+        km: 0,
+      };
+      const desvantagens = {
+        precoVenda: null,
+        anoFabricacao: null,
+        anoModelo: null,
+        km: null,
+      };
+      const lista = [
+        carroPainel({ id: "patinete", carroceria: "Patinete", ...vantagens }),
+        carroPainel({ id: "eletrica", carroceria: "Moto elétrica", ...vantagens }),
+        carroPainel({ id: "scooter", carroceria: "Scooter", ...vantagens }),
+        carroPainel({ id: "moto", carroceria: "Moto", ...desvantagens }),
+        carroPainel({ id: "hatch", status: "vendido", ...desvantagens }),
+        carroPainel({ id: "sem-carroceria", carroceria: null, ...desvantagens }),
+      ];
+
+      const ordenados = ids(ordenarCarros(lista, ordem, preco));
+
+      expect(ordenados.slice(0, 3).toSorted()).toEqual(["hatch", "moto", "sem-carroceria"]);
+      expect(ordenados.slice(3).toSorted()).toEqual(["eletrica", "patinete", "scooter"]);
+    },
+  );
+
+  it("entre os especiais, segue a ordem escolhida", () => {
+    const patinete = carroPainel({ id: "patinete", carroceria: "Patinete", precoVenda: 300_000 });
+    const scooter = carroPainel({ id: "scooter", carroceria: "Scooter", precoVenda: 1_500_000 });
+    const eletrica = carroPainel({ id: "eletrica", carroceria: "Moto elétrica", precoVenda: null });
+
+    expect(
+      ids(ordenarCarros([eletrica, scooter, onix, patinete, hb20], "precoAsc", preco)),
+    ).toEqual(["hb20", "onix", "patinete", "scooter", "eletrica"]);
+  });
+});
+
+describe("abasDoCatalogo", () => {
+  const patinete = carroPainel({ id: "patinete", carroceria: "Patinete" });
+  const scooter = carroPainel({ id: "scooter", carroceria: "Scooter" });
+  const outraScooter = carroPainel({ id: "outra-scooter", carroceria: "Scooter" });
+  const moto = carroPainel({ id: "moto", carroceria: "Moto" });
+  const eletrica = carroPainel({ id: "eletrica", carroceria: "Moto elétrica" });
+  const semCarroceria = carroPainel({ id: "sem-carroceria", carroceria: null });
+  const lista = [patinete, onix, scooter, moto, compass, eletrica, outraScooter, semCarroceria];
+  const soTodos = [{ valor: null, rotulo: "Todos" }];
+
+  it("começa em Todos, com todos os veículos, e oferece a aba de cada tipo presente, na ordem fixa", () => {
+    const { abas, aba, carros } = abasDoCatalogo(lista, null);
+
+    expect(abas).toEqual([
+      { valor: null, rotulo: "Todos" },
+      { valor: "carros", rotulo: "Carros" },
+      { valor: "Moto", rotulo: "Motos" },
+      { valor: "Scooter", rotulo: "Scooters" },
+      { valor: "Moto elétrica", rotulo: "Motos elétricas" },
+      { valor: "Patinete", rotulo: "Patinetes" },
+    ]);
+    expect(aba).toBeNull();
+    expect(carros).toEqual(lista);
+  });
+
+  it.each<[AbaDoCatalogo, string[]]>([
+    ["carros", ["onix", "compass", "sem-carroceria"]],
+    ["Moto", ["moto"]],
+    ["Scooter", ["scooter", "outra-scooter"]],
+    ["Moto elétrica", ["eletrica"]],
+    ["Patinete", ["patinete"]],
+  ])("na aba %s, deixa só os veículos daquele tipo", (escolhida, esperados) => {
+    const { aba, carros } = abasDoCatalogo(lista, escolhida);
+
+    expect(aba).toBe(escolhida);
+    expect(ids(carros)).toEqual(esperados);
+  });
+
+  it("não oferece a aba de um tipo ausente e volta para Todos quando a escolhida ficou sem veículos", () => {
+    const semCarros = abasDoCatalogo([moto, scooter], "carros");
+    expect(semCarros.abas.map(({ rotulo }) => rotulo)).toEqual(["Todos", "Motos", "Scooters"]);
+    expect(semCarros.aba).toBeNull();
+    expect(ids(semCarros.carros)).toEqual(["moto", "scooter"]);
+
+    const semPatinetes = abasDoCatalogo([onix, scooter], "Patinete");
+    expect(semPatinetes.abas.map(({ rotulo }) => rotulo)).toEqual(["Todos", "Carros", "Scooters"]);
+    expect(semPatinetes.aba).toBeNull();
+    expect(ids(semPatinetes.carros)).toEqual(["onix", "scooter"]);
+  });
+
+  it("com um tipo só, fica só a aba Todos, que já mostra todos eles", () => {
+    expect(abasDoCatalogo([onix, compass, semCarroceria], "carros")).toEqual({
+      abas: soTodos,
+      aba: null,
+      carros: [onix, compass, semCarroceria],
+    });
+    expect(abasDoCatalogo([scooter, outraScooter], "Scooter").abas).toEqual(soTodos);
+    expect(abasDoCatalogo([], null).abas).toEqual(soTodos);
   });
 });
 

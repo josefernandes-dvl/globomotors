@@ -128,6 +128,8 @@ describe("PaginaCatalogo", () => {
       "Renault Kwid",
     ]);
     expect(onix.closest("ul")).toHaveClass("grid-cols-2");
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
 
     expect(within(onix).getByText("Disponível", FORA_DA_SELECAO)).toBeInTheDocument();
     expect(within(onix).getByRole("img", { name: "Sem foto" })).toBeInTheDocument();
@@ -301,6 +303,145 @@ describe("PaginaCatalogo", () => {
       "Renault Kwid",
     ]);
     expect(ordem).toHaveTextContent("Menor km");
+  });
+
+  it("separa scooters, motos elétricas e patinetes em abas e os deixa sempre depois dos carros", async () => {
+    const usuario = userEvent.setup();
+    const pcx = carroPainel({
+      id: "c5",
+      slug: "honda-pcx-160-2025-p1",
+      marca: "Honda",
+      modelo: "PCX 160",
+      carroceria: "Scooter",
+      precoVenda: 2_000_000,
+      placa: "PCX1A23",
+    });
+    const voltz = carroPainel({
+      id: "c6",
+      slug: "voltz-evs-2025-v1",
+      marca: "Voltz",
+      modelo: "EVS",
+      carroceria: "Moto elétrica",
+      combustivel: "Elétrico",
+      status: "rascunho",
+      precoVenda: 1_800_000,
+      placa: "VTZ2B34",
+    });
+    const segway = carroPainel({
+      id: "c7",
+      slug: "segway-ninebot-2025-s1",
+      marca: "Segway",
+      modelo: "Ninebot",
+      carroceria: "Patinete",
+      combustivel: "Elétrico",
+      cambio: null,
+      precoVenda: 400_000,
+      placa: null,
+    });
+    simularCatalogo({
+      "GET /api/dashboard/cars": { carros: [pcx, ONIX, voltz, HB20, segway, COMPASS, KWID] },
+    });
+    await abrirCatalogo();
+
+    const abas = within(screen.getByRole("tablist", { name: "Tipos de veículo" })).getAllByRole(
+      "tab",
+    );
+    expect(abas.map((aba) => aba.textContent)).toEqual([
+      "Todos",
+      "Carros",
+      "Scooters",
+      "Motos elétricas",
+      "Patinetes",
+    ]);
+    expect(screen.getByRole("tab", { name: "Todos" })).toHaveAttribute("aria-selected", "true");
+    expect(numeros()["No catálogo"]).toBe("7");
+    expect(titulosDosCarros()).toEqual([
+      "Chevrolet Onix",
+      "Hyundai HB20",
+      "Jeep Compass",
+      "Renault Kwid",
+      "Honda PCX 160",
+      "Voltz EVS",
+      "Segway Ninebot",
+    ]);
+
+    const ordem = screen.getByRole("combobox", { name: "Ordenar por" });
+    await escolherOpcao(usuario, ordem, "Menor preço");
+    expect(titulosDosCarros()).toEqual([
+      "Hyundai HB20",
+      "Chevrolet Onix",
+      "Jeep Compass",
+      "Renault Kwid",
+      "Segway Ninebot",
+      "Voltz EVS",
+      "Honda PCX 160",
+    ]);
+
+    const marca = screen.getByRole("combobox", { name: "Filtrar por marca" });
+    await escolherOpcao(usuario, marca, "Honda");
+    expect(titulosDosCarros()).toEqual(["Honda PCX 160"]);
+
+    await usuario.click(screen.getByRole("tab", { name: "Patinetes" }));
+    expect(screen.getByRole("tab", { name: "Patinetes" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel", { name: "Patinetes" })).toContainElement(marca);
+    expect(titulosDosCarros()).toEqual(["Segway Ninebot"]);
+    expect(marca).toHaveTextContent("Todas as marcas");
+    expect(await lerOpcoes(usuario, marca)).toEqual(["Todas as marcas", "Segway"]);
+    expect(ordem).toHaveTextContent("Menor preço");
+    expect(numeros()["No catálogo"]).toBe("7");
+
+    await usuario.click(screen.getByRole("tab", { name: "Motos elétricas" }));
+    expect(titulosDosCarros()).toEqual(["Voltz EVS"]);
+    expect(await lerOpcoes(usuario, marca)).toEqual(["Todas as marcas", "Voltz"]);
+  });
+
+  it("separa carros e motos em abas, com as scooters fora da aba Motos", async () => {
+    const usuario = userEvent.setup();
+    const cg = carroPainel({
+      id: "c5",
+      slug: "honda-cg-160-2023-h2",
+      marca: "Honda",
+      modelo: "CG 160",
+      carroceria: "Moto",
+    });
+    const pcx = carroPainel({
+      id: "c6",
+      slug: "honda-pcx-160-2025-p1",
+      marca: "Honda",
+      modelo: "PCX 160",
+      carroceria: "Scooter",
+    });
+    const uno = carroPainel({
+      id: "c7",
+      slug: "fiat-uno-2015-f1",
+      marca: "Fiat",
+      modelo: "Uno",
+      carroceria: null,
+    });
+    simularCatalogo({ "GET /api/dashboard/cars": { carros: [cg, ONIX, pcx, uno, COMPASS] } });
+    await abrirCatalogo();
+
+    const abas = within(screen.getByRole("tablist", { name: "Tipos de veículo" })).getAllByRole(
+      "tab",
+    );
+    expect(abas.map((aba) => aba.textContent)).toEqual(["Todos", "Carros", "Motos", "Scooters"]);
+    const marca = screen.getByRole("combobox", { name: "Filtrar por marca" });
+
+    await usuario.click(screen.getByRole("tab", { name: "Motos" }));
+    expect(screen.getByRole("tab", { name: "Motos" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel", { name: "Motos" })).toContainElement(marca);
+    expect(titulosDosCarros()).toEqual(["Honda CG 160"]);
+    expect(await lerOpcoes(usuario, marca)).toEqual(["Todas as marcas", "Honda"]);
+
+    await usuario.click(screen.getByRole("tab", { name: "Carros" }));
+    expect(titulosDosCarros()).toEqual(["Chevrolet Onix", "Fiat Uno", "Jeep Compass"]);
+    expect(await lerOpcoes(usuario, marca)).toEqual([
+      "Todas as marcas",
+      "Chevrolet",
+      "Fiat",
+      "Jeep",
+    ]);
+    expect(numeros()["No catálogo"]).toBe("5");
   });
 
   it("muda o status na hora, avisa quando a API confirma e atualiza os números", async () => {
