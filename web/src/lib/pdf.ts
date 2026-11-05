@@ -357,19 +357,22 @@ export function montarCatalogoPdf(
     }
     const whatsapp = carro.status === "vendido" ? null : loja.whatsapp;
     const limite = whatsapp ? altura - 104 : altura - 50;
-    if (carro.opcionais.length > 0 && y < limite - 30) {
+    const listarItens = (titulo: string, itens: string[]) => {
+      if (itens.length === 0 || y >= limite - 30) return;
       y += 18;
       fonte(7.5, "bold");
       pintarTexto(CORES.azul);
-      doc.text("POSSUI:", MARGEM, y, { charSpace: 1.4 });
+      doc.text(titulo, MARGEM, y, { charSpace: 1.4 });
       y += 13;
       fonte(9.5);
       pintarTexto(CORES.prata);
-      const opcionais = linhas(textoPdf(carro.opcionais.join("   •   ")), larguraUtil);
+      const texto = linhas(textoPdf(itens.join("   •   ")), larguraUtil);
       const maximo = Math.min(3, Math.max(1, Math.floor((limite - y - 20) / 13)));
-      doc.text(opcionais.slice(0, maximo), MARGEM, y);
-      y += (Math.min(maximo, opcionais.length) - 1) * 13;
-    }
+      doc.text(texto.slice(0, maximo), MARGEM, y);
+      y += (Math.min(maximo, texto.length) - 1) * 13;
+    };
+    listarItens("CORES DISPONÍVEIS:", carro.cores.length > 1 ? carro.cores : []);
+    listarItens("POSSUI:", carro.opcionais);
     if (carro.descricao && y < limite - 30) {
       y += 22;
       fonte(7.5, "bold");

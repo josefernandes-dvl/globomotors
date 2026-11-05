@@ -14,7 +14,7 @@ export const CAMPOS_DA_IA = [
   "cambio",
   "combustivel",
   "carroceria",
-  "cor",
+  "cores",
   "motor",
   "portas",
   "opcionais",

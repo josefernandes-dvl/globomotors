@@ -74,7 +74,7 @@ async function prepararTesteInteresses() {
     cambio: "Automático",
     combustivel: "Flex",
     carroceria: "Hatch",
-    cor: "Prata",
+    cores: ["Prata"],
     precoVenda: 8_990_000,
     status: "disponivel",
   });
@@ -91,7 +91,7 @@ async function prepararTesteInteresses() {
     cambio: "Automático",
     combustivel: "Diesel",
     carroceria: "SUV",
-    cor: "Preto",
+    cores: ["Preto"],
     precoVenda: 14_500_000,
     status: "rascunho",
   });
@@ -104,7 +104,7 @@ async function prepararTesteInteresses() {
     km: 8_000,
     combustivel: "Flex",
     carroceria: "Moto",
-    cor: "Vermelha",
+    cores: ["Vermelha"],
     precoVenda: 1_890_000,
     status: "rascunho",
   });

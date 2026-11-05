@@ -17,6 +17,7 @@ const VEICULOS = [
     anoFabricacao: 2020,
     anoModelo: 2021,
     km: 42_000,
+    cores: ["Prata"],
     precoVenda: 8_990_000,
   },
   {
@@ -77,6 +78,7 @@ const VEICULOS = [
     anoFabricacao: 2025,
     anoModelo: 2025,
     km: 0,
+    cores: ["Branca", "Preta", "Cinza"],
     precoVenda: 2_090_000,
     destaque: true,
   },
@@ -134,6 +136,33 @@ const VEICULOS = [
     km: 150,
     precoVenda: 459_000,
   },
+  {
+    marca: "Shineray",
+    modelo: "Trike",
+    versao: "1500W",
+    carroceria: "Triciclo",
+    combustivel: "Elétrico",
+    cambio: "Automático",
+    motor: "1500W",
+    cores: ["Prata", "Vermelha"],
+    anoFabricacao: 2025,
+    anoModelo: 2025,
+    km: 0,
+    precoVenda: 1_590_000,
+  },
+  {
+    marca: "Bandeirante",
+    modelo: "Jipe Elétrico",
+    versao: "12V",
+    carroceria: "Infantil",
+    combustivel: "Elétrico",
+    motor: "12V",
+    cores: ["Azul"],
+    anoFabricacao: 2025,
+    anoModelo: 2025,
+    km: 0,
+    precoVenda: 129_000,
+  },
 ];
 
 let cookie = "";
@@ -176,7 +205,7 @@ async function prepararTesteAbas() {
       .join(" e ");
 
   console.log(`
-Teste das abas pronto (sufixo ${sufixo}).
+Teste das abas e das cores pronto (sufixo ${sufixo}).
 
 ${linha("Entrar", `${WEB}/login`)}
 ${linha("  e-mail", email)}
@@ -191,6 +220,12 @@ Publicados agora, todos disponíveis:
   Scooters: ${nomes("Scooter")} (a PCX tem destaque)
   Motos elétricas: ${nomes("Moto elétrica")}
   Patinetes: ${nomes("Patinete")}
+  Triciclos: ${nomes("Triciclo")}
+  Infantis: ${nomes("Infantil")}
+
+Cores: a PCX vem em Branca, Preta e Cinza e o Trike em Prata e Vermelha (a página do veículo
+lista as cores disponíveis e a ficha não mostra Cor); o Onix (Prata) e o Jipe (Azul) têm
+uma cor só, que aparece na ficha e na mensagem do WhatsApp.
 `);
 }
 

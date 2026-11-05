@@ -90,6 +90,12 @@ function itensAdicionais() {
     .map((item) => item.textContent);
 }
 
+function itensCores() {
+  return within(screen.getByRole("group", { name: "Cores" }))
+    .queryAllByRole("listitem")
+    .map((item) => item.textContent);
+}
+
 async function preencher(usuario: UserEvent, campos: Record<string, string>) {
   for (const [rotulo, texto] of Object.entries(campos)) {
     await usuario.clear(screen.getByLabelText(rotulo));
@@ -152,9 +158,12 @@ describe("PaginaFormularioCarro", () => {
         "Moto",
         "Scooter",
         "Moto elétrica",
+        "Triciclo",
         "Patinete",
+        "Infantil",
       ]);
       expect(itensAdicionais()).toEqual([]);
+      expect(itensCores()).toEqual([]);
       expect(document.body).not.toHaveTextContent("—");
       expect(document.body).not.toHaveTextContent(/vitrine/i);
       expect(screen.getByText("0 de 20")).toBeInTheDocument();
@@ -338,7 +347,6 @@ describe("PaginaFormularioCarro", () => {
         "Ano de fabricação": "2022",
         "Ano modelo": "2023",
         Quilometragem: "35.000",
-        Cor: "Branco",
         Motor: "1.3",
         Portas: "4",
         Descrição: "Revisado.",
@@ -358,6 +366,8 @@ describe("PaginaFormularioCarro", () => {
       await usuario.type(novoAdicional(), "Ar-condicionado{Enter}");
       await usuario.type(novoAdicional(), "Multimídia");
       await usuario.click(botaoAdicionar());
+      await usuario.type(screen.getByRole("textbox", { name: "Nova cor" }), "Branco{Enter}");
+      await usuario.type(screen.getByRole("textbox", { name: "Nova cor" }), "Preto{Enter}");
       await usuario.selectOptions(screen.getByLabelText("Câmbio"), "CVT");
       await usuario.selectOptions(screen.getByLabelText("Combustível"), "Flex");
       await usuario.selectOptions(screen.getByLabelText("Carroceria"), "SUV");
@@ -378,7 +388,7 @@ describe("PaginaFormularioCarro", () => {
             cambio: "CVT",
             combustivel: "Flex",
             carroceria: "SUV",
-            cor: "Branco",
+            cores: ["Branco", "Preto"],
             motor: "1.3",
             portas: 4,
             opcionais: ["Ar-condicionado", "Multimídia"],
@@ -691,7 +701,6 @@ describe("PaginaFormularioCarro", () => {
         cambio: "Automático",
         combustivel: "Flex",
         carroceria: "Hatch",
-        cor: "Prata",
         motor: "1.0 Turbo",
         portas: "4",
         descricao: "Único dono, revisões na concessionária.",
@@ -713,6 +722,7 @@ describe("PaginaFormularioCarro", () => {
         observacoesInternas: "Pneus novos",
       });
       expect(itensAdicionais()).toEqual(["Ar-condicionado", "Multimídia"]);
+      expect(itensCores()).toEqual(["Prata"]);
       expect(valorDe("Margem estimada:")).toHaveTextContent("R$ 12.400");
       expect(valorDe("Em estoque há:")).toHaveTextContent(/^29 dias$/);
       expect(screen.getByText("2 de 20")).toBeInTheDocument();
@@ -773,7 +783,7 @@ describe("PaginaFormularioCarro", () => {
           cambio: "Automático",
           combustivel: "Flex",
           carroceria: "Hatch",
-          cor: "Prata",
+          cores: ["Prata"],
           motor: "1.0 Turbo",
           portas: 4,
           opcionais: ["Ar-condicionado", "Multimídia"],
@@ -1292,7 +1302,12 @@ describe("PaginaFormularioCarro", () => {
       const usuario = userEvent.setup();
       const api = simularFormulario({
         "POST /api/dashboard/ai/extract-car": {
-          carro: { km: 51_000, precoVenda: 9_250_050, opcionais: ["multimídia", "Teto solar"] },
+          carro: {
+            km: 51_000,
+            precoVenda: 9_250_050,
+            cores: ["prata", "Preta"],
+            opcionais: ["multimídia", "Teto solar"],
+          },
         },
         "PUT /api/dashboard/cars/c1": { carro: ONIX },
       });
@@ -1303,11 +1318,12 @@ describe("PaginaFormularioCarro", () => {
       await pedirLeitura(usuario);
 
       expect(
-        await screen.findByText("A IA preencheu 3 campos. Confira antes de salvar."),
+        await screen.findByText("A IA preencheu 4 campos. Confira antes de salvar."),
       ).toBeInTheDocument();
       expect(screen.getByLabelText("Quilometragem")).toHaveValue("51.000");
       expect(screen.getByLabelText("Preço de venda (R$)")).toHaveValue("92.500,50");
       expect(itensAdicionais()).toEqual(["Ar-condicionado", "Multimídia", "Teto solar"]);
+      expect(itensCores()).toEqual(["Prata", "Preta"]);
 
       await usuario.click(screen.getByRole("button", { name: "Salvar alterações" }));
 
@@ -1318,6 +1334,7 @@ describe("PaginaFormularioCarro", () => {
           modelo: "Onix",
           km: 51_000,
           precoVenda: 9_250_050,
+          cores: ["Prata", "Preta"],
           opcionais: ["Ar-condicionado", "Multimídia", "Teto solar"],
           status: "disponivel",
           precoCompra: 7_500_000,

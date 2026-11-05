@@ -22,7 +22,7 @@ const onix: VeiculoParaDesejo = {
   versao: "1.0 Turbo LTZ",
   anoFabricacao: 2022,
   anoModelo: 2023,
-  cor: "Branco",
+  cores: ["Branco"],
   cambio: "Automático",
   combustivel: "Flex",
   carroceria: "Hatch",
@@ -126,6 +126,17 @@ describe("veiculoCombinaComDesejo", () => {
       expect(veiculoCombinaComDesejo(onix, desejo({ nome }))).toBe(false);
     },
   );
+
+  it("combina pela cor com qualquer uma das cores do veículo", () => {
+    const harley = { ...onix, cores: ["Preta", "Vermelha", "Azul"] };
+
+    expect(veiculoCombinaComDesejo(harley, desejo({ nome: "Onix vermelha" }))).toBe(true);
+    expect(veiculoCombinaComDesejo(harley, desejo({ nome: "Onix azul" }))).toBe(true);
+    expect(veiculoCombinaComDesejo(harley, desejo({ nome: "Onix branco" }))).toBe(false);
+    expect(veiculoCombinaComDesejo({ ...onix, cores: [] }, desejo({ nome: "Onix branco" }))).toBe(
+      false,
+    );
+  });
 
   it("não combina quando o ano do veículo fica abaixo do mínimo", () => {
     expect(veiculoCombinaComDesejo(onix, desejo({ anoMinimo: 2023 }))).toBe(true);

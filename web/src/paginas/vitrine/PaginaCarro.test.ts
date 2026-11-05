@@ -58,10 +58,12 @@ describe("PaginaCarro", () => {
       "4",
     ]);
     expect(screen.getByRole("heading", { name: "Possui:" })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
-      "Ar-condicionado",
-      "Multimídia",
-    ]);
+    expect(
+      within(screen.getByRole("list", { name: "Possui:" }))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Ar-condicionado", "Multimídia"]);
+    expect(screen.queryByRole("heading", { name: "Cores disponíveis:" })).not.toBeInTheDocument();
     expect(screen.getByText("Único dono, revisões na concessionária.")).toBeInTheDocument();
     await waitFor(() => expect(document.title).toBe("Chevrolet Onix 1.0 Turbo LTZ · Globo Motors"));
     expect(api.chaves()).toContain(ROTA_DO_CARRO);
@@ -81,6 +83,27 @@ describe("PaginaCarro", () => {
     );
     expect(link).toHaveAttribute("target", "_blank");
     expect(screen.getByText("WhatsApp (11) 98765-4321")).toBeInTheDocument();
+  });
+
+  it("lista as cores disponíveis do veículo que vem em mais de uma, fora da ficha e da mensagem", async () => {
+    simularCarro({
+      [ROTA_DO_CARRO]: { carro: carroPublico({ cores: ["Preta", "Branca", "Azul"] }) },
+    });
+
+    renderizarRota(CAMINHO);
+
+    const cores = await screen.findByRole("list", { name: "Cores disponíveis:" });
+    expect(
+      within(cores)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Preta", "Branca", "Azul"]);
+    expect(screen.getAllByRole("term").map((termo) => termo.textContent)).not.toContain("Cor");
+    expect(screen.getByRole("list", { name: "Possui:" })).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Tenho interesse: chamar no WhatsApp" });
+    expect(new URL(link.getAttribute("href") ?? "").searchParams.get("text")).toBe(
+      `Olá! Tenho interesse no Chevrolet Onix 1.0 Turbo LTZ 2020/2021. Ainda está disponível?\n${window.location.origin}/catalogo/chevrolet-onix-2021-c1`,
+    );
   });
 
   it("só leva de volta à vitrine, sem caminho para o painel", async () => {
@@ -282,7 +305,7 @@ describe("PaginaCarro", () => {
           cambio: null,
           combustivel: null,
           carroceria: null,
-          cor: null,
+          cores: [],
           motor: null,
           portas: null,
           opcionais: [],
@@ -298,6 +321,7 @@ describe("PaginaCarro", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("term")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Possui:" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Cores disponíveis:" })).not.toBeInTheDocument();
     expect(screen.queryByText("Único dono, revisões na concessionária.")).not.toBeInTheDocument();
     await waitFor(() => expect(document.title).toBe("Chevrolet Onix · Globo Motors"));
   });

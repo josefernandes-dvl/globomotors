@@ -15,7 +15,7 @@ const colunasDoVeiculo = {
   versao: carros.versao,
   anoFabricacao: carros.anoFabricacao,
   anoModelo: carros.anoModelo,
-  cor: carros.cor,
+  cores: carros.cores,
   cambio: carros.cambio,
   combustivel: carros.combustivel,
   carroceria: carros.carroceria,

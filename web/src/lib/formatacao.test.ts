@@ -114,7 +114,7 @@ describe("título, resumo e ficha técnica", () => {
 
   it("lista na ficha técnica só os campos preenchidos, na ordem da vitrine", () => {
     expect(
-      fichaTecnica(carroPainel({ cor: null, motor: null, carroceria: null, portas: 2 })),
+      fichaTecnica(carroPainel({ cores: [], motor: null, carroceria: null, portas: 2 })),
     ).toEqual([
       { rotulo: "Ano", valor: "2020/2021" },
       { rotulo: "Quilometragem", valor: "42.000 km" },
@@ -122,6 +122,14 @@ describe("título, resumo e ficha técnica", () => {
       { rotulo: "Combustível", valor: "Flex" },
       { rotulo: "Portas", valor: "2" },
     ]);
+  });
+
+  it("mostra a cor na ficha técnica só quando o veículo tem uma cor", () => {
+    const rotulos = (cores: string[]) =>
+      fichaTecnica(carroPainel({ cores })).map(({ rotulo, valor }) => `${rotulo}: ${valor}`);
+
+    expect(rotulos(["Prata"])).toContain("Cor: Prata");
+    expect(rotulos(["Prata", "Preta"]).join()).not.toContain("Cor");
   });
 });
 

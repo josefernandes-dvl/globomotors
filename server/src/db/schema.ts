@@ -81,7 +81,7 @@ export const carros = pgTable("carros", {
   cambio: text().$type<Cambio>(),
   combustivel: text().$type<Combustivel>(),
   carroceria: text().$type<Carroceria>(),
-  cor: text(),
+  cores: text().array().notNull().default([]),
   motor: text(),
   portas: smallint(),
   opcionais: text().array().notNull().default([]),

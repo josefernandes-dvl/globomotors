@@ -31,7 +31,7 @@ function paraCarroPublico(carro: LinhaCarroVitrine, loja: Loja): CarroPublico {
     cambio: carro.cambio,
     combustivel: carro.combustivel,
     carroceria: carro.carroceria,
-    cor: carro.cor,
+    cores: carro.cores,
     motor: carro.motor,
     portas: carro.portas,
     opcionais: carro.opcionais,

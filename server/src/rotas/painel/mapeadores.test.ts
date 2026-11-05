@@ -27,7 +27,7 @@ function linhaDeCarro(extra: Partial<LinhaCarroPainel> = {}): LinhaCarroPainel {
     cambio: "Automático",
     combustivel: "Flex",
     carroceria: "Hatch",
-    cor: "Prata",
+    cores: ["Prata"],
     motor: null,
     portas: 4,
     opcionais: [],

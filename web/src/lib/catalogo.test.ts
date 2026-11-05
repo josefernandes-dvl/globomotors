@@ -29,7 +29,7 @@ const hb20 = carroPainel({
   anoModelo: 2019,
   km: 80_000,
   cambio: "Manual",
-  cor: "Branco",
+  cores: ["Branco"],
   opcionais: ["Câmera de ré"],
   precoVenda: 5_500_000,
 });
@@ -54,6 +54,14 @@ describe("combinaComBusca", () => {
     expect(combinaComBusca(onix, "2020/2021")).toBe(true);
     expect(combinaComBusca(hb20, "manual")).toBe(true);
     expect(combinaComBusca(compass, "suv")).toBe(true);
+  });
+
+  it("acha o veículo por qualquer uma das cores", () => {
+    const harley = carroPainel({ cores: ["Preta", "Vermelha", "Azul"] });
+
+    expect(combinaComBusca(harley, "vermelha")).toBe(true);
+    expect(combinaComBusca(harley, "azul preta")).toBe(true);
+    expect(combinaComBusca(harley, "branca")).toBe(false);
   });
 
   it("ignora acento e maiúsculas", () => {
@@ -136,7 +144,7 @@ describe("ordenarCarros", () => {
   });
 
   it.each(Object.keys(ROTULOS_ORDEM) as Ordem[])(
-    "em “%s”, põe scooter, moto elétrica e patinete depois de todos os outros, mesmo ganhando na ordem",
+    "em “%s”, põe scooter, moto elétrica, triciclo, patinete e infantil depois de todos os outros, mesmo ganhando na ordem",
     (ordem) => {
       const vantagens = {
         destaque: true,
@@ -155,6 +163,8 @@ describe("ordenarCarros", () => {
         carroPainel({ id: "patinete", carroceria: "Patinete", ...vantagens }),
         carroPainel({ id: "eletrica", carroceria: "Moto elétrica", ...vantagens }),
         carroPainel({ id: "scooter", carroceria: "Scooter", ...vantagens }),
+        carroPainel({ id: "triciclo", carroceria: "Triciclo", ...vantagens }),
+        carroPainel({ id: "infantil", carroceria: "Infantil", ...vantagens }),
         carroPainel({ id: "moto", carroceria: "Moto", ...desvantagens }),
         carroPainel({ id: "hatch", status: "vendido", ...desvantagens }),
         carroPainel({ id: "sem-carroceria", carroceria: null, ...desvantagens }),
@@ -163,7 +173,13 @@ describe("ordenarCarros", () => {
       const ordenados = ids(ordenarCarros(lista, ordem, preco));
 
       expect(ordenados.slice(0, 3).toSorted()).toEqual(["hatch", "moto", "sem-carroceria"]);
-      expect(ordenados.slice(3).toSorted()).toEqual(["eletrica", "patinete", "scooter"]);
+      expect(ordenados.slice(3).toSorted()).toEqual([
+        "eletrica",
+        "infantil",
+        "patinete",
+        "scooter",
+        "triciclo",
+      ]);
     },
   );
 
@@ -184,8 +200,21 @@ describe("abasDoCatalogo", () => {
   const outraScooter = carroPainel({ id: "outra-scooter", carroceria: "Scooter" });
   const moto = carroPainel({ id: "moto", carroceria: "Moto" });
   const eletrica = carroPainel({ id: "eletrica", carroceria: "Moto elétrica" });
+  const triciclo = carroPainel({ id: "triciclo", carroceria: "Triciclo" });
+  const infantil = carroPainel({ id: "infantil", carroceria: "Infantil" });
   const semCarroceria = carroPainel({ id: "sem-carroceria", carroceria: null });
-  const lista = [patinete, onix, scooter, moto, compass, eletrica, outraScooter, semCarroceria];
+  const lista = [
+    infantil,
+    patinete,
+    onix,
+    scooter,
+    moto,
+    triciclo,
+    compass,
+    eletrica,
+    outraScooter,
+    semCarroceria,
+  ];
   const soTodos = [{ valor: null, rotulo: "Todos" }];
 
   it("começa em Todos, com todos os veículos, e oferece a aba de cada tipo presente, na ordem fixa", () => {
@@ -197,7 +226,9 @@ describe("abasDoCatalogo", () => {
       { valor: "Moto", rotulo: "Motos" },
       { valor: "Scooter", rotulo: "Scooters" },
       { valor: "Moto elétrica", rotulo: "Motos elétricas" },
+      { valor: "Triciclo", rotulo: "Triciclos" },
       { valor: "Patinete", rotulo: "Patinetes" },
+      { valor: "Infantil", rotulo: "Infantis" },
     ]);
     expect(aba).toBeNull();
     expect(carros).toEqual(lista);
@@ -208,7 +239,9 @@ describe("abasDoCatalogo", () => {
     ["Moto", ["moto"]],
     ["Scooter", ["scooter", "outra-scooter"]],
     ["Moto elétrica", ["eletrica"]],
+    ["Triciclo", ["triciclo"]],
     ["Patinete", ["patinete"]],
+    ["Infantil", ["infantil"]],
   ])("na aba %s, deixa só os veículos daquele tipo", (escolhida, esperados) => {
     const { aba, carros } = abasDoCatalogo(lista, escolhida);
 

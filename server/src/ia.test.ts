@@ -86,6 +86,11 @@ describe("criarIa", () => {
     expect(Object.keys(corpo.response_format.json_schema.schema.properties)).toContain(
       "precoVenda",
     );
+    expect(corpo.response_format.json_schema.schema.properties.cores).toEqual({
+      type: "array",
+      items: { type: "string" },
+    });
+    expect(corpo.messages[0]?.content).toContain("liste todas");
     expect(opcoes?.body).not.toContain("chave-secreta");
   });
 
@@ -118,7 +123,7 @@ describe("criarIa", () => {
           km: 45000,
           cambio: "Automático",
           combustivel: "Flex",
-          cor: null,
+          cores: ["Preta", " preta ", "Branca"],
           opcionais: ["Ar-condicionado", "ar-condicionado", "Câmera de ré"],
           precoVenda: 89900,
           precoCompra: 71000.5,
@@ -139,11 +144,20 @@ describe("criarIa", () => {
       km: 45000,
       cambio: "Automático",
       combustivel: "Flex",
+      cores: ["Preta", "Branca"],
       opcionais: ["Ar-condicionado", "Câmera de ré"],
       precoVenda: 8_990_000,
       precoCompra: 7_100_050,
       placa: "ABC1D23",
       vendedorTelefone: "62999990000",
+    });
+  });
+
+  it("descarta as cores que não vêm numa lista", async () => {
+    simularIa(respostaDaIa(JSON.stringify({ marca: "Honda", cores: "Vermelha" })));
+
+    await expect(iaDeTeste().lerCarro({ texto: "Honda", imagens: [] })).resolves.toEqual({
+      marca: "Honda",
     });
   });
 

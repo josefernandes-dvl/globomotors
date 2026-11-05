@@ -26,13 +26,19 @@ export function textoOpcional(maximo: number) {
   );
 }
 
-export function listaDeTextos(singular: string, varios: string, tamanho: number, maximo: number) {
+export function listaDeTextos(
+  singular: string,
+  varios: string,
+  tamanho: number,
+  maximo: number,
+  artigo: "o" | "a" = "o",
+) {
   return z
     .array(
       z
-        .string({ error: `${singular} inválido.` })
+        .string({ error: `${singular} inválid${artigo}.` })
         .trim()
-        .min(1, `${singular} vazio.`)
+        .min(1, `${singular} vazi${artigo}.`)
         .max(tamanho, `Cada ${singular.toLowerCase()} pode ter no máximo ${tamanho} caracteres.`),
       { error: `Lista de ${varios} inválida.` },
     )

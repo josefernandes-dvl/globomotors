@@ -1,11 +1,14 @@
 import type { CarroPainel, CarroPublico } from "@globomotors/shared";
 import {
+  corUnica,
   formatarAnos,
   formatarKm,
   formatarPreco,
   formatarTelefone,
   tituloDoCarro,
 } from "./formatacao.ts";
+
+const opcoesDeCor = new Intl.ListFormat("pt-BR", { type: "disjunction" });
 
 interface NomeDoCarro {
   marca: string;
@@ -35,7 +38,8 @@ export function linkDoCarro(slug: string, origem = window.location.origin) {
 
 export function mensagemDeInteresse(carro: CarroPublico, link: string) {
   const nome = [nomeCompleto(carro), formatarAnos(carro)].filter(Boolean).join(" ");
-  const cor = carro.cor ? `, cor ${carro.cor}` : "";
+  const unica = corUnica(carro.cores);
+  const cor = unica ? `, cor ${unica}` : "";
   return `Olá! Tenho interesse no ${nome}${cor}. Ainda está disponível?\n${link}`;
 }
 
@@ -48,7 +52,7 @@ export function fichaDoCarro(carro: CarroPainel, loja: DadosDaLoja, link: string
     [
       carro.cambio && `⚙️ ${carro.cambio}`,
       carro.combustivel && `⛽ ${carro.combustivel}`,
-      carro.cor && `🎨 ${carro.cor}`,
+      carro.cores.length > 0 && `🎨 ${opcoesDeCor.format(carro.cores)}`,
     ]
       .filter(Boolean)
       .join("  ·  "),

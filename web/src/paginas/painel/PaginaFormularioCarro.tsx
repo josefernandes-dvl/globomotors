@@ -6,6 +6,7 @@ import {
   diasEntre,
   errosDeCampo,
   esquemaCarro,
+  esquemaCores,
   esquemaOpcionais,
   esquemaPedidoIa,
   hojeEmSaoPaulo,
@@ -333,18 +334,28 @@ function FormularioCarro({ carro }: { carro?: CarroPainel }) {
               <CampoSelecao rotulo="Carroceria" {...campo("carroceria")}>
                 <Opcoes valores={CARROCERIAS} />
               </CampoSelecao>
-              <CampoTexto rotulo="Cor" className="sm:col-span-2" {...campo("cor")} />
               <CampoTexto
                 rotulo="Motor"
-                className="sm:col-span-2"
+                className="sm:col-span-3"
                 placeholder="1.0 Turbo"
                 {...campo("motor")}
               />
               <CampoTexto
                 rotulo="Portas"
                 inputMode="numeric"
-                className="sm:col-span-2"
+                className="sm:col-span-3"
                 {...campo("portas")}
+              />
+              <CampoDeItens
+                rotulo="Cores"
+                rotuloNovo="Nova cor"
+                placeholder="Prata"
+                dica="Com mais de uma, o catálogo mostra as cores disponíveis."
+                esquema={esquemaCores}
+                itens={valores.cores}
+                erro={erros.cores}
+                onMudar={(cores) => setValores((atuais) => ({ ...atuais, cores }))}
+                className="col-span-2 sm:col-span-6"
               />
             </div>
           </section>

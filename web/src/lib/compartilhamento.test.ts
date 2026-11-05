@@ -44,11 +44,22 @@ describe("mensagemDeInteresse", () => {
   it("omite a versão, os anos e a cor que o carro não informou", () => {
     expect(
       mensagemDeInteresse(
-        carroPublico({ versao: null, anoFabricacao: null, anoModelo: null, cor: null }),
+        carroPublico({ versao: null, anoFabricacao: null, anoModelo: null, cores: [] }),
         "https://loja.com.br/catalogo/onix",
       ),
     ).toBe(
       "Olá! Tenho interesse no Chevrolet Onix. Ainda está disponível?\nhttps://loja.com.br/catalogo/onix",
+    );
+  });
+
+  it("deixa a cor de fora quando o veículo vem em mais de uma", () => {
+    expect(
+      mensagemDeInteresse(
+        carroPublico({ cores: ["Preta", "Branca"] }),
+        "https://loja.com.br/catalogo/onix",
+      ),
+    ).toBe(
+      "Olá! Tenho interesse no Chevrolet Onix 1.0 Turbo LTZ 2020/2021. Ainda está disponível?\nhttps://loja.com.br/catalogo/onix",
     );
   });
 });
@@ -89,6 +100,16 @@ describe("fichaDoCarro", () => {
     }
   });
 
+  it("lista todas as cores como alternativas", () => {
+    const ficha = fichaDoCarro(
+      carroPainel({ cores: ["Preta", "Branca", "Azul"] }),
+      loja,
+      "https://loja.com.br/catalogo/onix",
+    );
+
+    expect(ficha).toContain("⚙️ Automático  ·  ⛽ Flex  ·  🎨 Preta, Branca ou Azul\n");
+  });
+
   it("omite linhas vazias, o link de carro não publicado e o WhatsApp ausente", () => {
     const carro = carroPainel({
       versao: null,
@@ -97,7 +118,7 @@ describe("fichaDoCarro", () => {
       km: null,
       cambio: null,
       combustivel: null,
-      cor: null,
+      cores: [],
       motor: null,
       opcionais: [],
       descricao: null,

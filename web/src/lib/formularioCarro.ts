@@ -1,5 +1,6 @@
 import {
   CAMPOS_DA_IA,
+  esquemaCores,
   esquemaOpcionais,
   hojeEmSaoPaulo,
   type CarroExtraido,
@@ -19,7 +20,7 @@ export interface ValoresCarro {
   cambio: string;
   combustivel: string;
   carroceria: string;
-  cor: string;
+  cores: string[];
   motor: string;
   portas: string;
   opcionais: string[];
@@ -74,7 +75,7 @@ export function valoresDoCarro(carro?: Partial<CarroPainel>): ValoresCarro {
     cambio: texto(carro?.cambio ?? null),
     combustivel: texto(carro?.combustivel ?? null),
     carroceria: texto(carro?.carroceria ?? null),
-    cor: texto(carro?.cor ?? null),
+    cores: carro?.cores ?? [],
     motor: texto(carro?.motor ?? null),
     portas: texto(carro?.portas ?? null),
     opcionais: carro?.opcionais ?? [],
@@ -100,6 +101,7 @@ export function valoresDoCarro(carro?: Partial<CarroPainel>): ValoresCarro {
 
 export function valoresDaIa(atuais: ValoresCarro, carro: CarroExtraido): ValoresCarro {
   const lidos = valoresDoCarro(carro);
+  const cores = esquemaCores.safeParse([...atuais.cores, ...(carro.cores ?? [])]);
   const opcionais = esquemaOpcionais.safeParse([...atuais.opcionais, ...(carro.opcionais ?? [])]);
   return {
     ...atuais,
@@ -109,6 +111,7 @@ export function valoresDaIa(atuais: ValoresCarro, carro: CarroExtraido): Valores
         lidos[campo],
       ]),
     ),
+    cores: cores.success ? cores.data : atuais.cores,
     opcionais: opcionais.success ? opcionais.data : atuais.opcionais,
   };
 }
@@ -124,7 +127,7 @@ export function paraDadosCarro(valores: ValoresCarro): DadosCarro {
     cambio: valores.cambio,
     combustivel: valores.combustivel,
     carroceria: valores.carroceria,
-    cor: valores.cor,
+    cores: valores.cores,
     motor: valores.motor,
     portas: lerInteiro(valores.portas),
     opcionais: valores.opcionais,

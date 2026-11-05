@@ -10,7 +10,7 @@ interface ResumoDoCarro {
 
 interface FichaDoCarro extends AnosDoCarro, ResumoDoCarro {
   combustivel: string | null;
-  cor: string | null;
+  cores: string[];
   motor: string | null;
   carroceria: string | null;
   portas: number | null;
@@ -80,13 +80,17 @@ export function resumoDoCarro(carro: ResumoDoCarro) {
   return [formatarKm(carro.km), carro.cambio].filter(Boolean).join(" · ");
 }
 
+export function corUnica(cores: string[]) {
+  return cores.length === 1 ? (cores[0] ?? null) : null;
+}
+
 export function fichaTecnica(carro: FichaDoCarro) {
   const itens: [string, string | null][] = [
     ["Ano", formatarAnos(carro)],
     ["Quilometragem", formatarKm(carro.km)],
     ["Câmbio", carro.cambio],
     ["Combustível", carro.combustivel],
-    ["Cor", carro.cor],
+    ["Cor", corUnica(carro.cores)],
     ["Motor", carro.motor],
     ["Carroceria", carro.carroceria],
     ["Portas", carro.portas === null ? null : String(carro.portas)],

@@ -21,7 +21,7 @@ const HB20 = carroPainel({
   anoModelo: 2019,
   km: 80_000,
   cambio: "Manual",
-  cor: "Branco",
+  cores: ["Branco"],
   status: "reservado",
   destaque: true,
   fotos: [
@@ -45,7 +45,7 @@ const COMPASS = carroPainel({
   anoFabricacao: 2022,
   anoModelo: 2023,
   km: 15_000,
-  cor: "Preto",
+  cores: ["Preto"],
   status: "vendido",
   precoVenda: 14_500_000,
   margem: 1_800_000,

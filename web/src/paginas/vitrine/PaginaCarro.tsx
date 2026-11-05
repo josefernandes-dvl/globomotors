@@ -5,7 +5,7 @@ import {
   type LojaPublica,
 } from "@globomotors/shared";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { Icone } from "../../componentes/Icone.tsx";
 import { ImagemDoCarro } from "../../componentes/ImagemDoCarro.tsx";
@@ -90,6 +90,27 @@ export function PaginaCarro() {
   );
 }
 
+function Etiquetas({ titulo, itens }: { titulo: string; itens: string[] }) {
+  const id = useId();
+  return (
+    <section>
+      <h2 id={id} className="mb-1.5 text-xs tracking-[0.07em] text-noite-prata uppercase">
+        {titulo}
+      </h2>
+      <ul aria-labelledby={id} className="flex flex-wrap gap-1.5">
+        {itens.map((item) => (
+          <li
+            key={item}
+            className="rounded-full border border-noite-borda bg-noite-foto px-2.5 py-1 text-[13px]"
+          >
+            {item}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function DetalheDoCarro({ carro, loja }: { carro: CarroPublico; loja: LojaPublica }) {
   const titulo = tituloDoCarro(carro);
   const ficha = fichaTecnica(carro);
@@ -120,21 +141,8 @@ function DetalheDoCarro({ carro, loja }: { carro: CarroPublico; loja: LojaPublic
             ))}
           </dl>
         )}
-        {carro.opcionais.length > 0 && (
-          <section>
-            <h2 className="mb-1.5 text-xs tracking-[0.07em] text-noite-prata uppercase">Possui:</h2>
-            <ul className="flex flex-wrap gap-1.5">
-              {carro.opcionais.map((opcional) => (
-                <li
-                  key={opcional}
-                  className="rounded-full border border-noite-borda bg-noite-foto px-2.5 py-1 text-[13px]"
-                >
-                  {opcional}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {carro.cores.length > 1 && <Etiquetas titulo="Cores disponíveis:" itens={carro.cores} />}
+        {carro.opcionais.length > 0 && <Etiquetas titulo="Possui:" itens={carro.opcionais} />}
         {carro.descricao && (
           <p className="whitespace-pre-wrap text-noite-prata">{carro.descricao}</p>
         )}

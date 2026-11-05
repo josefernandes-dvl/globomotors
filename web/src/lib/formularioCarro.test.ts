@@ -56,7 +56,7 @@ describe("valoresDoCarro", () => {
       cambio: "",
       combustivel: "",
       carroceria: "",
-      cor: "",
+      cores: [],
       motor: "",
       portas: "",
       opcionais: [],
@@ -91,7 +91,7 @@ describe("valoresDoCarro", () => {
       cambio: "Automático",
       combustivel: "Flex",
       carroceria: "Hatch",
-      cor: "Prata",
+      cores: ["Prata"],
       motor: "1.0 Turbo",
       portas: "4",
       opcionais: ["Ar-condicionado", "Multimídia"],
@@ -153,6 +153,15 @@ describe("valoresDaIa", () => {
     expect(valoresDaIa(atuais, { marca: "Fiat" }).opcionais).toEqual(atuais.opcionais);
   });
 
+  it("junta as cores lidas às que já estavam, sem repetir, e mantém as da tela acima do limite", () => {
+    const atuais = valoresDoCarro(carroPainel());
+
+    expect(valoresDaIa(atuais, { cores: ["prata", "Preta"] }).cores).toEqual(["Prata", "Preta"]);
+    expect(valoresDaIa(atuais, { marca: "Fiat" }).cores).toEqual(["Prata"]);
+    const cheias = { ...atuais, cores: Array.from({ length: 12 }, (_, i) => `Cor ${i + 1}`) };
+    expect(valoresDaIa(cheias, { cores: ["Azul"] }).cores).toEqual(cheias.cores);
+  });
+
   it("mantém os adicionais da tela quando a soma passa do limite", () => {
     const atuais = {
       ...valoresDoCarro(),
@@ -175,7 +184,7 @@ describe("paraDadosCarro", () => {
       cambio: "Automático",
       combustivel: "Flex",
       carroceria: "Hatch",
-      cor: "Prata",
+      cores: ["Prata"],
       motor: "1.0 Turbo",
       portas: 4,
       opcionais: ["Ar-condicionado", "Multimídia"],

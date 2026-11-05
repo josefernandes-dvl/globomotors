@@ -136,7 +136,7 @@ export function carroDeTeste(extra: Record<string, unknown> = {}) {
     cambio: "Automático",
     combustivel: "Flex",
     carroceria: "Hatch",
-    cor: "Prata",
+    cores: ["Prata"],
     motor: "1.0 Turbo",
     portas: 4,
     opcionais: ["Ar-condicionado", "Câmera de ré"],

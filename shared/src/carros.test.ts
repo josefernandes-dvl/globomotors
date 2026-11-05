@@ -31,7 +31,7 @@ describe("esquemaCarro", () => {
       cambio: null,
       combustivel: null,
       carroceria: null,
-      cor: null,
+      cores: [],
       motor: null,
       portas: null,
       opcionais: [],
@@ -58,12 +58,12 @@ describe("esquemaCarro", () => {
     const carro = esquemaCarro.parse({
       ...basico,
       versao: "   ",
-      cor: "",
+      motor: "",
       precoVenda: "",
       placa: "",
       dataEntrada: "",
     });
-    expect(carro).toMatchObject({ versao: null, cor: null, precoVenda: null, placa: null });
+    expect(carro).toMatchObject({ versao: null, motor: null, precoVenda: null, placa: null });
     expect(carro.dataEntrada).toBeUndefined();
   });
 
@@ -98,7 +98,7 @@ describe("esquemaCarro", () => {
     });
   });
 
-  it.each(["Moto", "Scooter", "Moto elétrica", "Patinete"])(
+  it.each(["Moto", "Scooter", "Moto elétrica", "Triciclo", "Patinete", "Infantil"])(
     "aceita a carroceria %s",
     (carroceria) => {
       expect(esquemaCarro.parse({ ...basico, carroceria }).carroceria).toBe(carroceria);
@@ -160,6 +160,24 @@ describe("esquemaCarro", () => {
     expect(erros({ ...basico, opcionais: "Teto" })).toEqual({
       opcionais: "Lista de adicionais inválida.",
     });
+  });
+
+  it("guarda as cores sem espaços nas pontas e sem repetir, ignorando maiúsculas", () => {
+    expect(
+      esquemaCarro.parse({ ...basico, cores: [" Preta ", "Branca", "preta", "Azul"] }).cores,
+    ).toEqual(["Preta", "Branca", "Azul"]);
+  });
+
+  it("recusa cor vazia, longa demais, mais de 12 cores e cores fora de uma lista", () => {
+    expect(erros({ ...basico, cores: ["Prata", " ", "x".repeat(31), 7] })).toEqual({
+      "cores.1": "Cor vazia.",
+      "cores.2": "Cada cor pode ter no máximo 30 caracteres.",
+      "cores.3": "Cor inválida.",
+    });
+    expect(erros({ ...basico, cores: Array.from({ length: 13 }, (_, i) => `Cor ${i}`) })).toEqual({
+      cores: "Informe no máximo 12 cores.",
+    });
+    expect(erros({ ...basico, cores: "Prata" })).toEqual({ cores: "Lista de cores inválida." });
   });
 
   it("guarda o nome e o telefone de quem vende o carro, com o telefone só em dígitos", () => {

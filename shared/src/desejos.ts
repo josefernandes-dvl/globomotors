@@ -56,7 +56,7 @@ export interface VeiculoParaDesejo {
   versao: string | null;
   anoFabricacao: number | null;
   anoModelo: number | null;
-  cor: string | null;
+  cores: string[];
   cambio: string | null;
   combustivel: string | null;
   carroceria: string | null;
@@ -88,7 +88,7 @@ export function veiculoCombinaComDesejo(veiculo: VeiculoParaDesejo, desejo: Crit
       veiculo.versao,
       veiculo.anoFabricacao,
       veiculo.anoModelo,
-      veiculo.cor,
+      ...veiculo.cores,
       veiculo.cambio,
       veiculo.combustivel,
       veiculo.carroceria,

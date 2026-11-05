@@ -1,5 +1,5 @@
 import { jsPDF, type jsPDFOptions } from "jspdf";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import { carroPublico, LOJA_PUBLICA } from "../testes/dados.ts";
 import { respostaDeErro, simularApi } from "../testes/simularApi.ts";
 import {
@@ -154,7 +154,7 @@ describe("montarCatalogoPdf", () => {
       cambio: null,
       combustivel: null,
       carroceria: null,
-      cor: null,
+      cores: [],
       motor: null,
       portas: null,
       opcionais: [],
@@ -169,6 +169,27 @@ describe("montarCatalogoPdf", () => {
     const documento = montarCatalogoPdf(jsPDF, { ...DADOS, carros: [minimo, longo] }, SEM_IMAGENS);
 
     expect(documento.getNumberOfPages()).toBe(4);
+  });
+
+  it("lista as cores antes dos adicionais só no veículo que vem em mais de uma", () => {
+    const textosDoPdf = (cores: string[]) => {
+      let escrita: MockInstance<jsPDF["text"]> | undefined;
+      const Pdf = function (opcoes: jsPDFOptions) {
+        const documento = new jsPDF(opcoes);
+        escrita = vi.spyOn(documento, "text");
+        return documento;
+      } as unknown as typeof jsPDF;
+      montarCatalogoPdf(Pdf, { ...DADOS, carros: [carroPublico({ cores })] }, SEM_IMAGENS);
+      return escrita?.mock.calls.flatMap(([texto]) => texto) ?? [];
+    };
+
+    const varias = textosDoPdf(["Preta", "Branca", "Azul"]);
+    expect(varias).toContain("Preta   •   Branca   •   Azul");
+    expect(varias.indexOf("CORES DISPONÍVEIS:")).toBeGreaterThan(-1);
+    expect(varias.indexOf("CORES DISPONÍVEIS:")).toBeLessThan(varias.indexOf("POSSUI:"));
+    const uma = textosDoPdf(["Prata"]);
+    expect(uma).not.toContain("CORES DISPONÍVEIS:");
+    expect(uma).toContain("POSSUI:");
   });
 
   it("usa a capa na grade e a foto principal com até 4 miniaturas na página do carro", () => {

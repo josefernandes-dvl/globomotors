@@ -48,7 +48,9 @@ export const CARROCERIAS = [
   "Moto",
   "Scooter",
   "Moto elétrica",
+  "Triciclo",
   "Patinete",
+  "Infantil",
 ] as const;
 export type Carroceria = (typeof CARROCERIAS)[number];
 
@@ -102,6 +104,8 @@ const esquemaRenavam = z
 
 export const esquemaOpcionais = listaDeTextos("Adicional", "adicionais", 60, 40);
 
+export const esquemaCores = listaDeTextos("Cor", "cores", 30, 12, "a");
+
 const esquemaDataEntrada = z.preprocess(
   (valor) => (valor === "" || valor === null ? undefined : valor),
   z.iso
@@ -127,7 +131,7 @@ export const esquemaCarro = z
       cambio: opcional(z.enum(CAMBIOS, { error: "Câmbio inválido." })),
       combustivel: opcional(z.enum(COMBUSTIVEIS, { error: "Combustível inválido." })),
       carroceria: opcional(z.enum(CARROCERIAS, { error: "Carroceria inválida." })),
-      cor: textoOpcional(30),
+      cores: esquemaCores.default([]),
       motor: textoOpcional(30),
       portas: opcional(
         z
@@ -215,7 +219,7 @@ interface CamposPublicosCarro {
   cambio: Cambio | null;
   combustivel: Combustivel | null;
   carroceria: Carroceria | null;
-  cor: string | null;
+  cores: string[];
   motor: string | null;
   portas: number | null;
   opcionais: string[];

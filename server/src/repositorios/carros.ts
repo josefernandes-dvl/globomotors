@@ -34,7 +34,7 @@ const colunasDaVitrine = {
   cambio: carros.cambio,
   combustivel: carros.combustivel,
   carroceria: carros.carroceria,
-  cor: carros.cor,
+  cores: carros.cores,
   motor: carros.motor,
   portas: carros.portas,
   opcionais: carros.opcionais,

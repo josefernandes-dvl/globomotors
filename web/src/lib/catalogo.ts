@@ -23,7 +23,9 @@ export const ORDENS_PAINEL: Ordem[] = ["recentes", "precoAsc", "precoDesc", "ano
 const ABAS_ESPECIAIS = [
   { valor: "Scooter", rotulo: "Scooters" },
   { valor: "Moto elétrica", rotulo: "Motos elétricas" },
+  { valor: "Triciclo", rotulo: "Triciclos" },
   { valor: "Patinete", rotulo: "Patinetes" },
+  { valor: "Infantil", rotulo: "Infantis" },
 ] as const satisfies readonly { valor: Carroceria; rotulo: string }[];
 
 const ABAS_DE_TIPO = [
@@ -75,7 +77,7 @@ interface CarroDoCatalogo {
   cambio: string | null;
   combustivel: string | null;
   carroceria: string | null;
-  cor: string | null;
+  cores: string[];
   motor: string | null;
   opcionais: string[];
   destaque: boolean;
@@ -93,7 +95,7 @@ export function combinaComBusca(
       carro.marca,
       carro.modelo,
       carro.versao,
-      carro.cor,
+      ...carro.cores,
       formatarAnos(carro),
       carro.cambio,
       carro.combustivel,
